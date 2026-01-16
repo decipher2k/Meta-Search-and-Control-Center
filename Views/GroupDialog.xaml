@@ -4,7 +4,8 @@
         Title="Group" 
         Height="300" Width="400"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        Icon="/app-icon.ico">
     
     <Grid Margin="16">
         <Grid.RowDefinitions>

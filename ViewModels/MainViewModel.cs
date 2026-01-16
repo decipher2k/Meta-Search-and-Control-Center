@@ -245,7 +245,7 @@ public class MainViewModel : ViewModelBase
         _dataSourceManager = new DataSourceManager();
         _searchService = new SearchService(_dataSourceManager);
 
-        SearchCommand = new AsyncRelayCommand(ExecuteSearchAsync, _ => !IsSearching && !string.IsNullOrWhiteSpace(SearchTerm));
+        SearchCommand = new AsyncRelayCommand(ExecuteSearchAsync, _ => !IsSearching);
         CancelSearchCommand = new RelayCommand(_ => CancelSearch(), _ => IsSearching);
         AddLabelCommand = new RelayCommand(AddLabel, _ => SelectedResult != null);
         RemoveLabelCommand = new RelayCommand(RemoveLabel);

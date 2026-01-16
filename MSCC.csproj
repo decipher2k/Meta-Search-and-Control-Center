@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <ApplicationIcon>ideogram-v3.0_Erstelle_ein_modernes_Icon_für_das_Programm_MetaSearch_Pro_mit_einer_Kombinatio-0.ico</ApplicationIcon>
+    <ApplicationIcon>app-icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="ideogram-v3.0_Erstelle_ein_modernes_Icon_für_das_Programm_MetaSearch_Pro_mit_einer_Kombinatio-0.ico" />
+    <Resource Include="app-icon.ico" />
   </ItemGroup>
 
   <ItemGroup>

@@ -4,7 +4,8 @@
         Title="Settings" 
         Height="400" Width="500"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        Icon="/app-icon.ico">
     
     <Window.Resources>
         <Style x:Key="SectionHeader" TargetType="TextBlock">

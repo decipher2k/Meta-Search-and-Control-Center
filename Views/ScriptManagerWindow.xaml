@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Script Manager" 
         Height="600" Width="900"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner"
+        Icon="/app-icon.ico">
     
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>

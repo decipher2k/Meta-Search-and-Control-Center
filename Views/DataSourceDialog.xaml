@@ -4,7 +4,8 @@
         Title="Data Source" 
         Height="450" Width="500"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        Icon="/app-icon.ico">
     
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
@@ -38,8 +39,7 @@
         <!-- Gruppe -->
         <StackPanel Grid.Row="2" Margin="0,0,0,12">
             <TextBlock x:Name="GroupLabel" Text="Group:" FontWeight="SemiBold" Margin="0,0,0,4"/>
-            <ComboBox x:Name="GroupComboBox" 
-                      Padding="8,6">
+            <ComboBox x:Name="GroupComboBox" Padding="8,6">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
