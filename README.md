@@ -1,48 +1,48 @@
 # MSCC - Meta Search Command Center
 
-Eine erweiterbare Metasuchmaschine für Windows, die mehrere Datenquellen gleichzeitig durchsuchen kann. Die Anwendung unterstützt sowohl eingebaute Konnektoren als auch benutzerdefinierte Plugins.
+An extensible meta search engine for Windows that can search multiple data sources simultaneously. The application supports both built-in connectors and custom plugins.
 
-## Inhaltsverzeichnis
+## Table of Contents
 
-- [Funktionsübersicht](#funktionsübersicht)
+- [Feature Overview](#feature-overview)
 - [Installation](#installation)
-- [Benutzeroberfläche](#benutzeroberfläche)
-- [Konnektoren und Datenquellen](#konnektoren-und-datenquellen)
-- [Plugin-Entwicklung](#plugin-entwicklung)
-  - [Option 1: Script-basierte Plugins](#option-1-script-basierte-plugins)
-  - [Option 2: Kompilierte Plugins (Visual Studio)](#option-2-kompilierte-plugins-visual-studio)
-- [API-Referenz](#api-referenz)
-- [Beispiele](#beispiele)
+- [User Interface](#user-interface)
+- [Connectors and Data Sources](#connectors-and-data-sources)
+- [Plugin Development](#plugin-development)
+  - [Option 1: Script-based Plugins](#option-1-script-based-plugins)
+  - [Option 2: Compiled Plugins (Visual Studio)](#option-2-compiled-plugins-visual-studio)
+- [API Reference](#api-reference)
+- [Examples](#examples)
 
 ---
 
-## Funktionsübersicht
+## Feature Overview
 
-### Kernfunktionen
+### Core Features
 
-- **Multi-Source-Suche**: Durchsuchen Sie mehrere Datenquellen gleichzeitig
-- **Datenquellen-Gruppen**: Organisieren Sie Ihre Datenquellen in logischen Gruppen
-- **Label-System**: Versehen Sie Suchergebnisse mit Keywords für spätere Referenz
-- **Gespeicherte Abfragen**: Speichern und laden Sie häufig verwendete Suchen
-- **Erweiterbar**: Fügen Sie eigene Konnektoren per Script oder als kompiliertes Plugin hinzu
+- **Multi-Source Search**: Search multiple data sources simultaneously
+- **Data Source Groups**: Organize your data sources into logical groups
+- **Label System**: Tag search results with keywords for later reference
+- **Saved Queries**: Save and load frequently used searches
+- **Extensible**: Add custom connectors via script or as compiled plugins
 
-### Eingebaute Konnektoren
+### Built-in Connectors
 
-| Konnektor | Beschreibung |
-|-----------|--------------|
-| **Dateisystem** | Durchsucht lokale Dateien und Ordner nach Dateinamen |
-| **Mock-Datenbank** | Demo-Konnektor für Testzwecke |
+| Connector | Description |
+|-----------|-------------|
+| **File System** | Searches local files and folders by filename |
+| **Mock Database** | Demo connector for testing purposes |
 
 ---
 
 ## Installation
 
-### Voraussetzungen
+### Prerequisites
 
 - Windows 10/11
 - .NET 10 Runtime
 
-### Build aus Quellcode
+### Build from Source
 
 ```bash
 git clone <repository-url>
@@ -53,58 +53,58 @@ dotnet run
 
 ---
 
-## Benutzeroberfläche
+## User Interface
 
-### Hauptfenster
+### Main Window
 
-Das Hauptfenster ist in drei Bereiche unterteilt:
+The main window is divided into three areas:
 
-1. **Linke Seitenleiste**: Gruppen und Datenquellen verwalten
-2. **Mitte**: Suchergebnisse und Detailansicht
-3. **Rechte Seitenleiste**: Labels und gespeicherte Abfragen
+1. **Left Sidebar**: Manage groups and data sources
+2. **Center**: Search results and detail view
+3. **Right Sidebar**: Labels and saved queries
 
-### Datenquellen verwalten
+### Managing Data Sources
 
-1. Klicken Sie auf **+** bei "Datenquellen"
-2. Wählen Sie einen Konnektor-Typ
-3. Geben Sie einen Namen und die Konfiguration ein
-4. Klicken Sie auf **Speichern**
+1. Click **+** next to "Data Sources"
+2. Select a connector type
+3. Enter a name and configuration
+4. Click **Save**
 
-### Suche durchführen
+### Performing a Search
 
-1. Aktivieren Sie die gewünschten Datenquellen (Checkbox)
-2. Geben Sie einen Suchbegriff ein
-3. Drücken Sie **Enter** oder klicken Sie auf **Suchen**
-
----
-
-## Konnektoren und Datenquellen
-
-### Konzept
-
-- **Konnektor**: Ein Plugin, das eine bestimmte Datenquelle anbinden kann (z.B. Dateisystem, REST-API, Datenbank)
-- **Datenquelle**: Eine konkrete Instanz eines Konnektors mit spezifischer Konfiguration
-
-Beispiel: Der Dateisystem-Konnektor kann mehrere Datenquellen erstellen - eine für "Dokumente", eine für "Downloads", etc.
+1. Enable the desired data sources (checkbox)
+2. Enter a search term
+3. Press **Enter** or click **Search**
 
 ---
 
-## Plugin-Entwicklung
+## Connectors and Data Sources
 
-Es gibt zwei Möglichkeiten, eigene Konnektoren zu erstellen:
+### Concept
 
-### Option 1: Script-basierte Plugins
+- **Connector**: A plugin that can connect to a specific data source (e.g., file system, REST API, database)
+- **Data Source**: A concrete instance of a connector with specific configuration
 
-Script-Plugins werden zur Laufzeit kompiliert und erfordern keinen separaten Build-Prozess. Ideal für schnelle Prototypen und einfache Konnektoren.
+Example: The file system connector can create multiple data sources - one for "Documents", one for "Downloads", etc.
 
-#### Script erstellen
+---
 
-1. Öffnen Sie **Plugins ? Script Manager**
-2. Geben Sie einen Namen ein und klicken Sie auf **+ Neues Script**
-3. Bearbeiten Sie das generierte Template
-4. Klicken Sie auf **Kompilieren**
+## Plugin Development
 
-#### Script-Template
+There are two ways to create custom connectors:
+
+### Option 1: Script-based Plugins
+
+Script plugins are compiled at runtime and don't require a separate build process. Ideal for quick prototypes and simple connectors.
+
+#### Creating a Script
+
+1. Open **Plugins ? Script Manager**
+2. Enter a name and click **+ New Script**
+3. Edit the generated template
+4. Click **Compile**
+
+#### Script Template
 
 ```csharp
 using System;
@@ -117,28 +117,28 @@ using MSCC.Scripting;
 
 namespace MSCC.Scripts
 {
-    public class MeinKonnektor : ScriptedConnectorBase
+    public class MyConnector : ScriptedConnectorBase
     {
-        // Eindeutige ID für diesen Konnektor
-        public override string Id => "mein-konnektor";
+        // Unique ID for this connector
+        public override string Id => "my-connector";
         
-        // Anzeigename in der UI
-        public override string Name => "Mein Konnektor";
+        // Display name in the UI
+        public override string Name => "My Connector";
         
-        // Beschreibung
-        public override string Description => "Beschreibung meines Konnektors";
+        // Description
+        public override string Description => "Description of my connector";
         
         // Version
         public override string Version => "1.0.0";
 
-        // Konfigurationsparameter definieren
+        // Define configuration parameters
         public override IEnumerable<ConnectorParameter> ConfigurationParameters => new[]
         {
             new ConnectorParameter
             {
                 Name = "ApiUrl",
                 DisplayName = "API URL",
-                Description = "Die URL der API",
+                Description = "The URL of the API",
                 ParameterType = "string",
                 IsRequired = true
             },
@@ -146,7 +146,7 @@ namespace MSCC.Scripts
             {
                 Name = "ApiKey",
                 DisplayName = "API Key",
-                Description = "Optionaler API-Schlüssel",
+                Description = "Optional API key",
                 ParameterType = "string",
                 IsRequired = false
             }
@@ -155,7 +155,7 @@ namespace MSCC.Scripts
         private string _apiUrl = string.Empty;
         private string _apiKey = string.Empty;
 
-        // Initialisierung mit Konfiguration
+        // Initialization with configuration
         public override Task<bool> InitializeAsync(Dictionary<string, string> configuration)
         {
             if (!configuration.TryGetValue("ApiUrl", out var url) || string.IsNullOrEmpty(url))
@@ -168,13 +168,13 @@ namespace MSCC.Scripts
             return Task.FromResult(true);
         }
 
-        // Verbindungstest
+        // Connection test
         public override Task<bool> TestConnectionAsync()
         {
             return Task.FromResult(!string.IsNullOrEmpty(_apiUrl));
         }
 
-        // Suchlogik implementieren
+        // Implement search logic
         public override async Task<IEnumerable<SearchResult>> SearchAsync(
             string searchTerm,
             int maxResults = 100,
@@ -182,22 +182,22 @@ namespace MSCC.Scripts
         {
             var results = new List<SearchResult>();
 
-            // Hier Ihre Suchlogik implementieren
-            // Beispiel: API aufrufen, Datenbank abfragen, etc.
+            // Implement your search logic here
+            // Example: Call API, query database, etc.
 
-            // Ergebnis hinzufügen
+            // Add result
             results.Add(new SearchResult
             {
-                Title = "Beispiel-Ergebnis",
-                Description = $"Gefunden für: {searchTerm}",
+                Title = "Example Result",
+                Description = $"Found for: {searchTerm}",
                 SourceName = Name,
                 ConnectorId = Id,
                 OriginalReference = "ref-123",
                 RelevanceScore = 100,
                 Metadata = new Dictionary<string, object>
                 {
-                    ["Eigenschaft1"] = "Wert1",
-                    ["Eigenschaft2"] = 42
+                    ["Property1"] = "Value1",
+                    ["Property2"] = 42
                 }
             });
 
@@ -207,43 +207,43 @@ namespace MSCC.Scripts
 }
 ```
 
-#### Script-Speicherort
+#### Script Storage Location
 
-Scripts werden gespeichert unter:
+Scripts are saved under:
 ```
 %APPDATA%\MSCC\Scripts\
 ```
 
-Jedes Script besteht aus zwei Dateien:
-- `ScriptName_<id>.cs` - Der Quellcode
-- `ScriptName_<id>.cs.meta` - Metadaten (Name, Version, etc.)
+Each script consists of two files:
+- `ScriptName_<id>.cs` - The source code
+- `ScriptName_<id>.cs.meta` - Metadata (name, version, etc.)
 
 ---
 
-### Option 2: Kompilierte Plugins (Visual Studio)
+### Option 2: Compiled Plugins (Visual Studio)
 
-Für komplexere Konnektoren empfiehlt sich die Entwicklung als kompiliertes Plugin.
+For more complex connectors, development as a compiled plugin is recommended.
 
-#### Projekt erstellen
+#### Creating a Project
 
-1. Erstellen Sie ein neues **Class Library**-Projekt in Visual Studio
-2. Ziel-Framework: **.NET 10**
-3. Fügen Sie eine Projekt-Referenz zu `MSCC.csproj` hinzu
+1. Create a new **Class Library** project in Visual Studio
+2. Target Framework: **.NET 10**
+3. Add a project reference to `MSCC.csproj`
 
-#### IDataSourceConnector implementieren
+#### Implementing IDataSourceConnector
 
 ```csharp
 using System.Windows;
 using MSCC.Connectors;
 using MSCC.Models;
 
-namespace MeinPlugin
+namespace MyPlugin
 {
-    public class MeinKonnektor : IDataSourceConnector
+    public class MyConnector : IDataSourceConnector
     {
-        public string Id => "mein-kompilierter-konnektor";
-        public string Name => "Mein Kompilierter Konnektor";
-        public string Description => "Ein kompilierter Konnektor";
+        public string Id => "my-compiled-connector";
+        public string Name => "My Compiled Connector";
+        public string Description => "A compiled connector";
         public string Version => "1.0.0";
 
         public IEnumerable<ConnectorParameter> ConfigurationParameters => new[]
@@ -251,7 +251,7 @@ namespace MeinPlugin
             new ConnectorParameter
             {
                 Name = "ConnectionString",
-                DisplayName = "Verbindungszeichenfolge",
+                DisplayName = "Connection String",
                 ParameterType = "string",
                 IsRequired = true
             }
@@ -270,7 +270,7 @@ namespace MeinPlugin
 
         public Task<bool> TestConnectionAsync()
         {
-            // Verbindungstest implementieren
+            // Implement connection test
             return Task.FromResult(!string.IsNullOrEmpty(_connectionString));
         }
 
@@ -281,7 +281,7 @@ namespace MeinPlugin
         {
             var results = new List<SearchResult>();
             
-            // Suchlogik hier implementieren
+            // Implement search logic here
             
             return results;
         }
@@ -293,44 +293,44 @@ namespace MeinPlugin
                 ViewType = DetailViewType.Default,
                 Actions = new List<ResultAction>
                 {
-                    new() { Id = "open", Name = "Öffnen", Icon = "??" }
+                    new() { Id = "open", Name = "Open", Icon = "??" }
                 }
             };
         }
 
         public FrameworkElement? CreateCustomDetailView(SearchResult result)
         {
-            return null; // Oder eigene WPF-Ansicht zurückgeben
+            return null; // Or return custom WPF view
         }
 
         public Task<bool> ExecuteActionAsync(SearchResult result, string actionId)
         {
-            // Aktionen behandeln
+            // Handle actions
             return Task.FromResult(true);
         }
 
         public void Dispose()
         {
-            // Ressourcen freigeben
+            // Release resources
         }
     }
 }
 ```
 
-#### Konnektor registrieren
+#### Registering the Connector
 
-In `DataSourceManager.cs` den Konnektor hinzufügen:
+Add the connector in `DataSourceManager.cs`:
 
 ```csharp
 public void RegisterDefaultConnectors()
 {
     RegisterConnector(new FileSystemConnector());
     RegisterConnector(new MockDatabaseConnector());
-    RegisterConnector(new MeinKonnektor()); // Hier hinzufügen
+    RegisterConnector(new MyConnector()); // Add here
 }
 ```
 
-Und in `CreateConnectorInstance`:
+And in `CreateConnectorInstance`:
 
 ```csharp
 private static IDataSourceConnector? CreateConnectorInstance(IDataSourceConnector template)
@@ -341,8 +341,8 @@ private static IDataSourceConnector? CreateConnectorInstance(IDataSourceConnecto
     if (template is MockDatabaseConnector)
         return new MockDatabaseConnector();
     
-    if (template is MeinKonnektor)
-        return new MeinKonnektor();
+    if (template is MyConnector)
+        return new MyConnector();
     
     // ... rest
 }
@@ -350,71 +350,71 @@ private static IDataSourceConnector? CreateConnectorInstance(IDataSourceConnecto
 
 ---
 
-## API-Referenz
+## API Reference
 
 ### IDataSourceConnector
 
-Das Haupt-Interface für alle Konnektoren.
+The main interface for all connectors.
 
-| Methode/Property | Beschreibung |
-|------------------|--------------|
-| `Id` | Eindeutige Kennung des Konnektors |
-| `Name` | Anzeigename |
-| `Description` | Beschreibung |
-| `Version` | Versionsnummer |
-| `ConfigurationParameters` | Liste der Konfigurationsparameter |
-| `InitializeAsync()` | Initialisiert den Konnektor mit Konfiguration |
-| `TestConnectionAsync()` | Prüft die Verbindung |
-| `SearchAsync()` | Führt eine Suche durch |
-| `GetDetailViewConfiguration()` | Definiert die Detailansicht |
-| `CreateCustomDetailView()` | Erstellt eine benutzerdefinierte WPF-Ansicht |
-| `ExecuteActionAsync()` | Führt eine Aktion auf einem Ergebnis aus |
+| Method/Property | Description |
+|-----------------|-------------|
+| `Id` | Unique identifier of the connector |
+| `Name` | Display name |
+| `Description` | Description |
+| `Version` | Version number |
+| `ConfigurationParameters` | List of configuration parameters |
+| `InitializeAsync()` | Initializes the connector with configuration |
+| `TestConnectionAsync()` | Tests the connection |
+| `SearchAsync()` | Performs a search |
+| `GetDetailViewConfiguration()` | Defines the detail view |
+| `CreateCustomDetailView()` | Creates a custom WPF view |
+| `ExecuteActionAsync()` | Executes an action on a result |
 
 ### SearchResult
 
-Repräsentiert ein Suchergebnis.
+Represents a search result.
 
-| Property | Typ | Beschreibung |
-|----------|-----|--------------|
-| `Title` | string | Titel des Ergebnisses |
-| `Description` | string | Beschreibung |
-| `SourceName` | string | Name der Datenquelle |
-| `ConnectorId` | string | ID des Konnektors |
-| `OriginalReference` | string | Referenz zum Original (z.B. Dateipfad, URL) |
-| `RelevanceScore` | int | Relevanz (0-100) |
-| `Metadata` | Dictionary | Zusätzliche Eigenschaften |
+| Property | Type | Description |
+|----------|------|-------------|
+| `Title` | string | Title of the result |
+| `Description` | string | Description |
+| `SourceName` | string | Name of the data source |
+| `ConnectorId` | string | ID of the connector |
+| `OriginalReference` | string | Reference to original (e.g., file path, URL) |
+| `RelevanceScore` | int | Relevance (0-100) |
+| `Metadata` | Dictionary | Additional properties |
 
 ### ConnectorParameter
 
-Definiert einen Konfigurationsparameter.
+Defines a configuration parameter.
 
-| Property | Beschreibung |
-|----------|--------------|
-| `Name` | Technischer Name |
-| `DisplayName` | Anzeigename |
-| `Description` | Beschreibung/Hilfetext |
-| `ParameterType` | Typ: "string", "bool", "int", "path" |
-| `IsRequired` | Pflichtfeld? |
-| `DefaultValue` | Standardwert |
+| Property | Description |
+|----------|-------------|
+| `Name` | Technical name |
+| `DisplayName` | Display name |
+| `Description` | Description/help text |
+| `ParameterType` | Type: "string", "bool", "int", "path" |
+| `IsRequired` | Required field? |
+| `DefaultValue` | Default value |
 
 ### DetailViewConfiguration
 
-Konfiguriert die Detailansicht für Suchergebnisse.
+Configures the detail view for search results.
 
-| Property | Beschreibung |
-|----------|--------------|
-| `ViewType` | Art der Ansicht: Default, Table, Media, Chart, Custom |
-| `TableColumns` | Spaltendefinitionen für Tabellenansicht |
-| `Actions` | Verfügbare Aktionen |
-| `ChartConfig` | Konfiguration für Diagramme |
+| Property | Description |
+|----------|-------------|
+| `ViewType` | Type of view: Default, Table, Media, Chart, Custom |
+| `TableColumns` | Column definitions for table view |
+| `Actions` | Available actions |
+| `ChartConfig` | Configuration for charts |
 
 ---
 
-## Beispiele
+## Examples
 
-### Web-API Konnektor
+### Web API Connector
 
-Ein Beispiel für einen Konnektor, der eine REST-API abfragt:
+An example of a connector that queries a REST API:
 
 ```csharp
 public override async Task<IEnumerable<SearchResult>> SearchAsync(
@@ -459,7 +459,7 @@ public override async Task<IEnumerable<SearchResult>> SearchAsync(
 }
 ```
 
-### Datenbank-Konnektor
+### Database Connector
 
 ```csharp
 public override async Task<IEnumerable<SearchResult>> SearchAsync(
@@ -498,23 +498,23 @@ public override async Task<IEnumerable<SearchResult>> SearchAsync(
 
 ---
 
-## Tests ausführen
+## Running Tests
 
 ```bash
 cd MSCC.Tests
 dotnet test
 ```
 
-Aktuelle Testabdeckung: **163 Tests**
+Current test coverage: **163 tests**
 
 ---
 
-## Lizenz
+## License
 
-MIT License
+Apache 2.0 License
 
 ---
 
-## Mitwirken
+## Contributing
 
-Pull Requests sind willkommen! Bitte erstellen Sie zunächst ein Issue, um größere Änderungen zu besprechen.
+Pull requests are welcome! Please create an issue first to discuss larger changes.
