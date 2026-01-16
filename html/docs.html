@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MetaSearch Pro Documentation - Learn how to use and extend the meta search engine.">
+    <title>Documentation - MetaSearch Pro</title>
+    <link rel="stylesheet" href="css/fonts.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/docs.css">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar scrolled" id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <span class="logo-icon">&#128269;</span>
+                <span class="logo-text">MetaSearch<span class="accent">Pro</span></span>
+            </a>
+            <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu" id="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="index.html#features" class="nav-link">Features</a></li>
+                <li><a href="#" class="nav-link active">Documentation</a></li>
+                <li><a href="index.html#download" class="nav-link nav-cta">Download</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Documentation Content -->
+    <main class="docs-main">
+        <aside class="docs-sidebar">
+            <nav class="docs-nav">
+                <div class="docs-nav-section">
+                    <h3>Getting Started</h3>
+                    <ul>
+                        <li><a href="#installation" class="active">Installation</a></li>
+                        <li><a href="#quick-start">Quick Start</a></li>
+                        <li><a href="#configuration">Configuration</a></li>
+                    </ul>
+                </div>
+                <div class="docs-nav-section">
+                    <h3>Core Concepts</h3>
+                    <ul>
+                        <li><a href="#connectors">Connectors</a></li>
+                        <li><a href="#data-sources">Data Sources</a></li>
+                        <li><a href="#groups">Groups</a></li>
+                        <li><a href="#labels">Labels &amp; Queries</a></li>
+                    </ul>
+                </div>
+                <div class="docs-nav-section">
+                    <h3>Plugin Development</h3>
+                    <ul>
+                        <li><a href="#script-plugins">Script Plugins</a></li>
+                        <li><a href="#compiled-plugins">Compiled Plugins</a></li>
+                        <li><a href="#api-reference">API Reference</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <div class="docs-content">
+            <article>
+                <h1>MetaSearch Pro Documentation</h1>
+                <p class="docs-intro">
+                    Welcome to the MetaSearch Pro documentation. This guide will help you get started 
+                    with the application and learn how to create custom connectors.
+                </p>
+
+                <section id="installation">
+                    <h2>Installation</h2>
+                    <h3>Prerequisites</h3>
+                    <ul>
+                        <li>Windows 10 or Windows 11</li>
+                        <li>.NET 10 Runtime</li>
+                    </ul>
+
+                    <h3>Build from Source</h3>
+                    <div class="code-block">
+                        <pre><code>git clone &lt;repository-url&gt;
+cd MSCC
+dotnet build
+dotnet run</code></pre>
+                    </div>
+                </section>
+
+                <section id="quick-start">
+                    <h2>Quick Start</h2>
+                    <ol>
+                        <li>Launch MetaSearch Pro</li>
+                        <li>Configure your first data source using the <strong>+</strong> button</li>
+                        <li>Select the data sources you want to search</li>
+                        <li>Enter a search term and press Enter</li>
+                        <li>View results and add labels as needed</li>
+                    </ol>
+                </section>
+
+                <section id="configuration">
+                    <h2>Configuration</h2>
+                    <p>
+                        MetaSearch Pro stores its configuration in the following locations:
+                    </p>
+                    <table class="docs-table">
+                        <thead>
+                            <tr>
+                                <th>File</th>
+                                <th>Location</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>settings.json</code></td>
+                                <td>%APPDATA%\MSCC\</td>
+                                <td>Application settings (language, UI preferences)</td>
+                            </tr>
+                            <tr>
+                                <td><code>datasources.json</code></td>
+                                <td>%APPDATA%\MSCC\</td>
+                                <td>Data sources and groups configuration</td>
+                            </tr>
+                            <tr>
+                                <td><code>Scripts\</code></td>
+                                <td>%APPDATA%\MSCC\</td>
+                                <td>Custom script-based connectors</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="connectors">
+                    <h2>Connectors</h2>
+                    <p>
+                        Connectors are plugins that enable MetaSearch Pro to search specific types of data sources.
+                        Each connector defines:
+                    </p>
+                    <ul>
+                        <li>Configuration parameters required to connect</li>
+                        <li>Search logic to find and return results</li>
+                        <li>Detail view configuration for displaying results</li>
+                        <li>Optional actions that can be performed on results</li>
+                    </ul>
+
+                    <h3>Built-in Connectors</h3>
+                    <div class="connector-grid">
+                        <div class="connector-card">
+                            <div class="connector-icon">&#128193;</div>
+                            <h4>File System</h4>
+                            <p>Search local files and folders by filename.</p>
+                        </div>
+                        <div class="connector-card">
+                            <div class="connector-icon">&#128451;</div>
+                            <h4>Mock Database</h4>
+                            <p>Demo connector for testing purposes.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="data-sources">
+                    <h2>Data Sources</h2>
+                    <p>
+                        A data source is an instance of a connector with specific configuration.
+                        For example, you can create multiple file system data sources:
+                    </p>
+                    <ul>
+                        <li><strong>Documents</strong> - searching your Documents folder</li>
+                        <li><strong>Downloads</strong> - searching your Downloads folder</li>
+                        <li><strong>Project Files</strong> - searching a specific project directory</li>
+                    </ul>
+                </section>
+
+                <section id="groups">
+                    <h2>Groups</h2>
+                    <p>
+                        Groups help you organize data sources into logical collections. 
+                        You can select an entire group to search all its data sources at once.
+                    </p>
+                </section>
+
+                <section id="labels">
+                    <h2>Labels &amp; Saved Queries</h2>
+                    <p>
+                        Labels allow you to tag search results with custom keywords. 
+                        This creates a personal taxonomy across all your data sources.
+                    </p>
+                    <p>
+                        Saved queries store your search term along with selected data sources 
+                        and any labels you've applied, allowing you to quickly repeat complex searches.
+                    </p>
+                </section>
+
+                <section id="script-plugins">
+                    <h2>Script Plugins</h2>
+                    <p>
+                        Script plugins are C# files that are compiled at runtime. They're ideal for 
+                        quick prototypes and simple connectors.
+                    </p>
+                    
+                    <h3>Creating a Script Plugin</h3>
+                    <ol>
+                        <li>Open <strong>Plugins &rarr; Script Manager</strong></li>
+                        <li>Click <strong>+ New Script</strong></li>
+                        <li>Edit the generated template</li>
+                        <li>Click <strong>Compile</strong> to register the connector</li>
+                    </ol>
+
+                    <h3>Script Template</h3>
+                    <div class="code-block">
+                        <pre><code class="language-csharp">public class MyConnector : ScriptedConnectorBase
+{
+    public override string Id =&gt; "my-connector";
+    public override string Name =&gt; "My Connector";
+    public override string Description =&gt; "My custom connector";
+    public override string Version =&gt; "1.0.0";
+
+    public override IEnumerable&lt;ConnectorParameter&gt; ConfigurationParameters =&gt; new[]
+    {
+        new ConnectorParameter
+        {
+            Name = "ApiUrl",
+            DisplayName = "API URL",
+            IsRequired = true
+        }
+    };
+
+    public override async Task&lt;IEnumerable&lt;SearchResult&gt;&gt; SearchAsync(
+        string searchTerm,
+        int maxResults = 100,
+        CancellationToken cancellationToken = default)
+    {
+        var results = new List&lt;SearchResult&gt;();
+        
+        // Your search logic here
+        
+        return results;
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <section id="compiled-plugins">
+                    <h2>Compiled Plugins</h2>
+                    <p>
+                        For complex connectors with dependencies, you can create compiled plugins 
+                        using Visual Studio.
+                    </p>
+                    
+                    <h3>Steps</h3>
+                    <ol>
+                        <li>Create a new Class Library project targeting .NET 10</li>
+                        <li>Add a reference to the MSCC project</li>
+                        <li>Implement the <code>IDataSourceConnector</code> interface</li>
+                        <li>Register your connector in <code>DataSourceManager.cs</code></li>
+                    </ol>
+                </section>
+
+                <section id="api-reference">
+                    <h2>API Reference</h2>
+                    
+                    <h3>IDataSourceConnector</h3>
+                    <table class="docs-table">
+                        <thead>
+                            <tr>
+                                <th>Member</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>Id</code></td>
+                                <td>string</td>
+                                <td>Unique identifier</td>
+                            </tr>
+                            <tr>
+                                <td><code>Name</code></td>
+                                <td>string</td>
+                                <td>Display name</td>
+                            </tr>
+                            <tr>
+                                <td><code>Description</code></td>
+                                <td>string</td>
+                                <td>Description text</td>
+                            </tr>
+                            <tr>
+                                <td><code>Version</code></td>
+                                <td>string</td>
+                                <td>Version number</td>
+                            </tr>
+                            <tr>
+                                <td><code>ConfigurationParameters</code></td>
+                                <td>IEnumerable</td>
+                                <td>Required configuration</td>
+                            </tr>
+                            <tr>
+                                <td><code>InitializeAsync()</code></td>
+                                <td>Task&lt;bool&gt;</td>
+                                <td>Initialize with config</td>
+                            </tr>
+                            <tr>
+                                <td><code>SearchAsync()</code></td>
+                                <td>Task&lt;IEnumerable&gt;</td>
+                                <td>Perform search</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>SearchResult</h3>
+                    <table class="docs-table">
+                        <thead>
+                            <tr>
+                                <th>Property</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>Title</code></td>
+                                <td>string</td>
+                                <td>Result title</td>
+                            </tr>
+                            <tr>
+                                <td><code>????????</code></td>
+                                <td>string</td>
+                                <td>????? ???????? ??????????</td>
+                            </tr>
+                            <tr>
+                                <td><code>SourceName</code></td>
+                                <td>string</td>
+                                <td>??? ????????? ??????</td>
+                            </tr>
+                            <tr>
+                                <td><code>ConnectorId</code></td>
+                                <td>string</td>
+                                <td>????????????? ???????????</td>
+                            </tr>
+                            <tr>
+                                <td><code>OriginalReference</code></td>
+                                <td>string</td>
+                                <td>?????? ?? ???????????? ???????</td>
+                            </tr>
+                            <tr>
+                                <td><code>RelevanceScore</code></td>
+                                <td>int</td>
+                                <td>????????????? (0-100)</td>
+                            </tr>
+                            <tr>
+                                <td><code>Metadata</code></td>
+                                <td>Dictionary</td>
+                                <td>?????????????? ????????</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </article>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2026 Dennis Michael Heine. All rights reserved.</p>
+                <p>Released under the MIT License.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
