@@ -1,6 +1,8 @@
 //Meta Search and Control Center (c) 2026 Dennis Michael Heine
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
+using MSCC.Localization;
 using MSCC.Models;
 using MSCC.Services;
 
@@ -56,10 +58,30 @@ public partial class GroupDialog : Window
         ColorComboBox.SelectionChanged += (s, e) => UpdateColorPreview();
         ColorComboBox.SelectedIndex = 0;
         
+        // Auf Sprachwechsel reagieren
+        Strings.Instance.PropertyChanged += OnStringsPropertyChanged;
+        ApplyLocalization();
+        
         if (_isEditMode)
         {
             LoadExistingGroup();
         }
+    }
+
+    private void OnStringsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        ApplyLocalization();
+    }
+
+    private void ApplyLocalization()
+    {
+        var loc = Strings.Instance;
+        
+        Title = _isEditMode ? loc.EditGroup : loc.NewGroup;
+        NameLabel.Text = loc.GroupName + ":";
+        ColorLabel.Text = loc.GroupColor + ":";
+        CancelButton.Content = loc.Cancel;
+        SaveButton.Content = loc.Save;
     }
 
     private void LoadExistingGroup()
@@ -89,10 +111,12 @@ public partial class GroupDialog : Window
 
     private void SaveButton_Click(object sender, RoutedEventArgs e)
     {
+        var loc = Strings.Instance;
+        
         // Validierung
         if (string.IsNullOrWhiteSpace(NameTextBox.Text))
         {
-            MessageBox.Show("Bitte geben Sie einen Namen ein.", "Validierungsfehler", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(loc.FieldRequired, loc.ValidationError, MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
@@ -116,7 +140,7 @@ public partial class GroupDialog : Window
             }
             else
             {
-                MessageBox.Show("Fehler beim Aktualisieren der Gruppe.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(loc.Error, loc.Error, MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         else

@@ -27,31 +27,31 @@
         
         <!-- Toolbar -->
         <ToolBar Grid.Row="0" Background="#F0F0F0">
-            <Button Content="Speichern" 
+            <Button x:Name="SaveToolbarButton" Content="Save" 
                     Command="{Binding SaveCommand}"
                     Style="{StaticResource ToolbarButton}"/>
             <Separator/>
-            <Button Content="Kompilieren" 
+            <Button x:Name="CompileToolbarButton" Content="Compile" 
                     Command="{Binding CompileCommand}"
                     Background="#27AE60"
                     Foreground="White"
                     Style="{StaticResource ToolbarButton}"/>
-            <Button Content="Validieren" 
+            <Button x:Name="ValidateToolbarButton" Content="Validate" 
                     Command="{Binding ValidateCommand}"
                     Style="{StaticResource ToolbarButton}"/>
             <Separator/>
             <Menu Background="Transparent">
-                <MenuItem Header="Einfuegen">
-                    <MenuItem Header="Suchergebnis erstellen" 
+                <MenuItem x:Name="InsertMenuItem" Header="Insert">
+                    <MenuItem Header="Search Result" 
                               Command="{Binding InsertTemplateCommand}" 
                               CommandParameter="search"/>
-                    <MenuItem Header="Aktion hinzufuegen" 
+                    <MenuItem Header="Action" 
                               Command="{Binding InsertTemplateCommand}" 
                               CommandParameter="action"/>
-                    <MenuItem Header="Konfigurationsparameter" 
+                    <MenuItem Header="Config Parameter" 
                               Command="{Binding InsertTemplateCommand}" 
                               CommandParameter="config"/>
-                    <MenuItem Header="Detailansicht" 
+                    <MenuItem Header="Detail View" 
                               Command="{Binding InsertTemplateCommand}" 
                               CommandParameter="detailview"/>
                 </MenuItem>
@@ -71,9 +71,9 @@
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Version: " FontWeight="SemiBold"/>
                 <TextBlock Text="{Binding CurrentScript.Metadata.Version}" Margin="0,0,16,0"/>
-                <TextBlock Text="Erstellt: " FontWeight="SemiBold"/>
+                <TextBlock Text="Created: " FontWeight="SemiBold"/>
                 <TextBlock Text="{Binding CurrentScript.Metadata.CreatedAt, StringFormat=g}" Margin="0,0,16,0"/>
-                <TextBlock Text="Geaendert: " FontWeight="SemiBold"/>
+                <TextBlock Text="Modified: " FontWeight="SemiBold"/>
                 <TextBlock Text="{Binding CurrentScript.Metadata.ModifiedAt, StringFormat=g}"/>
             </StackPanel>
         </Border>
@@ -114,35 +114,35 @@
         
         <!-- Fehler/Warnungen -->
         <TabControl Grid.Row="4" Margin="4">
-            <TabItem Header="Fehler">
+            <TabItem x:Name="ErrorsTab" Header="Errors">
                 <ListView ItemsSource="{Binding Errors}" 
                           SelectionChanged="ErrorList_SelectionChanged">
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Header="Zeile" Width="60" 
+                            <GridViewColumn Header="Line" Width="60" 
                                             DisplayMemberBinding="{Binding Line}"/>
-                            <GridViewColumn Header="Spalte" Width="60" 
+                            <GridViewColumn Header="Column" Width="60" 
                                             DisplayMemberBinding="{Binding Column}"/>
                             <GridViewColumn Header="Code" Width="80" 
                                             DisplayMemberBinding="{Binding ErrorId}"/>
-                            <GridViewColumn Header="Meldung" Width="500" 
+                            <GridViewColumn Header="Message" Width="500" 
                                             DisplayMemberBinding="{Binding Message}"/>
                         </GridView>
                     </ListView.View>
                 </ListView>
             </TabItem>
-            <TabItem Header="Warnungen">
+            <TabItem x:Name="WarningsTab" Header="Warnings">
                 <ListView ItemsSource="{Binding Warnings}"
                           SelectionChanged="ErrorList_SelectionChanged">
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Header="Zeile" Width="60" 
+                            <GridViewColumn Header="Line" Width="60" 
                                             DisplayMemberBinding="{Binding Line}"/>
-                            <GridViewColumn Header="Spalte" Width="60" 
+                            <GridViewColumn Header="Column" Width="60" 
                                             DisplayMemberBinding="{Binding Column}"/>
                             <GridViewColumn Header="Code" Width="80" 
                                             DisplayMemberBinding="{Binding ErrorId}"/>
-                            <GridViewColumn Header="Meldung" Width="500" 
+                            <GridViewColumn Header="Message" Width="500" 
                                             DisplayMemberBinding="{Binding Message}"/>
                         </GridView>
                     </ListView.View>
@@ -164,9 +164,10 @@
                            Foreground="White"/>
                 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="16,0">
-                    <TextBlock Text="Zeile " Foreground="#BDC3C7"/>
+                    <TextBlock x:Name="LineLabel" Text="Line " Foreground="#BDC3C7"/>
                     <TextBlock Text="{Binding CursorLine}" Foreground="#BDC3C7"/>
-                    <TextBlock Text=", Spalte " Foreground="#BDC3C7"/>
+                    <TextBlock Text=" | " Foreground="#BDC3C7"/>
+                    <TextBlock x:Name="ColumnLabel" Text="Column " Foreground="#BDC3C7"/>
                     <TextBlock Text="{Binding CursorColumn}" Foreground="#BDC3C7"/>
                 </StackPanel>
                 

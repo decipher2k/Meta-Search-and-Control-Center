@@ -1,6 +1,8 @@
 //Meta Search and Control Center (c) 2026 Dennis Michael Heine
+using System.ComponentModel;
 using System.Windows;
 using MSCC.Connectors;
+using MSCC.Localization;
 using MSCC.Models;
 using MSCC.Services;
 
@@ -37,8 +39,10 @@ public partial class DataSourceDialog : Window
         _dataSourceManager = dataSourceManager;
         _existingDataSource = existingDataSource;
         _isEditMode = existingDataSource != null;
-
-        Title = _isEditMode ? "Datenquelle bearbeiten" : "Neue Datenquelle";
+        
+        // Auf Sprachwechsel reagieren
+        Strings.Instance.PropertyChanged += OnStringsPropertyChanged;
+        ApplyLocalization();
         
         LoadConnectors();
         LoadGroups();
@@ -47,6 +51,25 @@ public partial class DataSourceDialog : Window
         {
             LoadExistingDataSource();
         }
+    }
+
+    private void OnStringsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        ApplyLocalization();
+    }
+
+    private void ApplyLocalization()
+    {
+        var loc = Strings.Instance;
+        
+        Title = _isEditMode ? loc.EditDataSource : loc.NewDataSource;
+        NameLabel.Text = loc.DataSourceName + ":";
+        ConnectorLabel.Text = loc.ConnectorType + ":";
+        GroupLabel.Text = loc.Groups + ":";
+        IsEnabledCheckBox.Content = loc.Enabled;
+        ConfigLabel.Text = loc.Configuration + ":";
+        CancelButton.Content = loc.Cancel;
+        SaveButton.Content = loc.Save;
     }
 
     private void LoadConnectors()

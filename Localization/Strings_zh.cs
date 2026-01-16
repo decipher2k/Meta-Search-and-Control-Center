@@ -1,0 +1,127 @@
+//Meta Search and Control Center (c) 2026 Dennis Michael Heine
+namespace MSCC.Localization;
+
+/// <summary>
+/// Chinesische Übersetzungen (vereinfacht).
+/// </summary>
+public static class Strings_zh
+{
+    public static Dictionary<string, string> Resources { get; } = new()
+    {
+        // Application
+        ["AppTitle"] = "MSCC - ???????",
+        ["Ready"] = "??",
+        ["Error"] = "??",
+        ["Warning"] = "??",
+        ["Success"] = "??",
+        ["Cancel"] = "??",
+        ["Save"] = "??",
+        ["Delete"] = "??",
+        ["Edit"] = "??",
+        ["Add"] = "??",
+        ["Close"] = "??",
+        ["Yes"] = "?",
+        ["No"] = "?",
+        ["OK"] = "??",
+
+        // Menu
+        ["MenuFile"] = "??",
+        ["MenuExit"] = "??",
+        ["MenuPlugins"] = "??",
+        ["MenuScriptManager"] = "?????...",
+        ["MenuReloadScripts"] = "??????",
+        ["MenuSettings"] = "??...",
+        ["MenuHelp"] = "??",
+        ["MenuAbout"] = "?? MSCC",
+
+        // Search
+        ["Search"] = "??",
+        ["SearchResults"] = "????",
+        ["Searching"] = "???...",
+        ["SearchCompleted"] = "????",
+        ["NoResults"] = "?????",
+        ["ResultsFound"] = "?? {0} ???",
+        ["Source"] = "??",
+
+        // DataSources
+        ["DataSources"] = "???",
+        ["NewDataSource"] = "?????",
+        ["EditDataSource"] = "?????",
+        ["DeleteDataSource"] = "?????",
+        ["DataSourceName"] = "??",
+        ["ConnectorType"] = "?????",
+        ["Configuration"] = "??",
+        ["Enabled"] = "???",
+        ["NoDataSourcesSelected"] = "??????????",
+
+        // Groups
+        ["Groups"] = "??",
+        ["NewGroup"] = "????",
+        ["EditGroup"] = "????",
+        ["DeleteGroup"] = "????",
+        ["GroupName"] = "??",
+        ["GroupColor"] = "??",
+        ["NoGroup"] = "(???)",
+
+        // Details
+        ["DetailView"] = "????",
+        ["SelectResultForDetails"] = "??????????????",
+        ["Open"] = "??",
+        ["OpenFolder"] = "?????",
+        ["CopyPath"] = "????",
+
+        // Labels
+        ["AddLabel"] = "????",
+        ["SelectResultFirst"] = "????????",
+        ["KeywordSearch"] = "?????",
+        ["SearchByKeyword"] = "??????",
+        ["CurrentQuery"] = "????",
+        ["SavedQueries"] = "??????",
+        ["Load"] = "??",
+        ["Labels"] = "??",
+
+        // Script Editor
+        ["ScriptEditor"] = "?????",
+        ["ScriptManager"] = "?????",
+        ["NewScript"] = "????",
+        ["Compile"] = "??",
+        ["Validate"] = "??",
+        ["Insert"] = "??",
+        ["Errors"] = "??",
+        ["Warnings"] = "??",
+        ["Line"] = "?",
+        ["Column"] = "?",
+        ["CompileSuccess"] = "???? - ??????",
+        ["CompileFailed"] = "???? - {0} ???",
+
+        // Settings
+        ["Settings"] = "??",
+        ["Language"] = "??",
+        ["SelectLanguage"] = "????",
+        ["RestartRequired"] = "???????????????",
+        ["General"] = "??",
+        ["Appearance"] = "??",
+
+        // Validation
+        ["FieldRequired"] = "?? '{0}' ?????",
+        ["InvalidValue"] = "???",
+        ["ValidationError"] = "????",
+
+        // Status
+        ["Loading"] = "???...",
+        ["Saving"] = "???...",
+        ["Compiling"] = "???...",
+        ["ScriptConnectorsLoaded"] = "??? {0} ??????",
+        ["DataSourceCreated"] = "??? '{0}' ???",
+        ["DataSourceUpdated"] = "??? '{0}' ???",
+        ["DataSourceDeleted"] = "??? '{0}' ???",
+        ["GroupCreated"] = "?? '{0}' ???",
+        ["GroupUpdated"] = "?? '{0}' ???",
+        ["GroupDeleted"] = "?? '{0}' ???",
+
+        // Confirmation dialogs
+        ["ConfirmDelete"] = "????? '{0}' ??",
+        ["ConfirmDeleteDataSource"] = "???????? '{0}' ??",
+        ["ConfirmDeleteGroup"] = "??????? '{0}' ??\n\n??????????????",
+    };
+}

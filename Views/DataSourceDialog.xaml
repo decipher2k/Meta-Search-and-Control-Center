@@ -1,7 +1,7 @@
 <Window x:Class="MSCC.Views.DataSourceDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Datenquelle bearbeiten" 
+        Title="Data Source" 
         Height="450" Width="500"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize">
@@ -22,13 +22,13 @@
         
         <!-- Name -->
         <StackPanel Grid.Row="0" Margin="0,0,0,12">
-            <TextBlock Text="Name:" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <TextBlock x:Name="NameLabel" Text="Name:" FontWeight="SemiBold" Margin="0,0,0,4"/>
             <TextBox x:Name="NameTextBox" Padding="8,6"/>
         </StackPanel>
         
         <!-- Konnektor-Typ (nur bei Neuanlage) -->
         <StackPanel Grid.Row="1" Margin="0,0,0,12" x:Name="ConnectorPanel">
-            <TextBlock Text="Konnektor-Typ:" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <TextBlock x:Name="ConnectorLabel" Text="Connector Type:" FontWeight="SemiBold" Margin="0,0,0,4"/>
             <ComboBox x:Name="ConnectorComboBox" 
                       Padding="8,6"
                       DisplayMemberPath="Name"
@@ -37,7 +37,7 @@
         
         <!-- Gruppe -->
         <StackPanel Grid.Row="2" Margin="0,0,0,12">
-            <TextBlock Text="Gruppe:" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <TextBlock x:Name="GroupLabel" Text="Group:" FontWeight="SemiBold" Margin="0,0,0,4"/>
             <ComboBox x:Name="GroupComboBox" 
                       Padding="8,6">
                 <ComboBox.ItemTemplate>
@@ -52,11 +52,11 @@
         </StackPanel>
         
         <!-- Aktiviert -->
-        <CheckBox Grid.Row="3" x:Name="IsEnabledCheckBox" Content="Aktiviert" IsChecked="True" Margin="0,0,0,12"/>
+        <CheckBox Grid.Row="3" x:Name="IsEnabledCheckBox" Content="Enabled" IsChecked="True" Margin="0,0,0,12"/>
         
         <!-- Konfiguration -->
         <StackPanel Grid.Row="4" Margin="0,0,0,12">
-            <TextBlock Text="Konfiguration:" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <TextBlock x:Name="ConfigLabel" Text="Configuration:" FontWeight="SemiBold" Margin="0,0,0,4"/>
             <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="150">
                 <ItemsControl x:Name="ConfigItemsControl">
                     <ItemsControl.ItemTemplate>
@@ -80,11 +80,11 @@
         
         <!-- Buttons -->
         <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Abbrechen" 
+            <Button x:Name="CancelButton" Content="Cancel" 
                     Padding="16,8" 
                     Margin="0,0,8,0"
                     Click="CancelButton_Click"/>
-            <Button Content="Speichern" 
+            <Button x:Name="SaveButton" Content="Save" 
                     Padding="16,8"
                     Background="#27AE60"
                     Foreground="White"

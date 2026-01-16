@@ -134,20 +134,62 @@ public static class GlobalState
     }
 
     /// <summary>
-    /// Speichert den aktuellen Zustand (Placeholder für Persistenz).
+    /// Speichert den aktuellen Zustand persistent.
     /// </summary>
-    public static async Task SaveStateAsync(string filePath)
+    public static async Task SaveStateAsync()
     {
-        // TODO: Implementiere JSON-Serialisierung
-        await Task.CompletedTask;
+        await DataSourceStorageService.Instance.SaveAsync();
     }
 
     /// <summary>
-    /// Lädt den Zustand aus einer Datei (Placeholder für Persistenz).
+    /// Lädt den Zustand aus der persistenten Speicherung.
     /// </summary>
-    public static async Task LoadStateAsync(string filePath)
+    public static async Task LoadStateAsync()
     {
-        // TODO: Implementiere JSON-Deserialisierung
-        await Task.CompletedTask;
+        var state = await DataSourceStorageService.Instance.LoadAsync();
+        if (state == null)
+            return;
+
+        lock (_lock)
+        {
+            // Gruppen laden
+            Groups.Clear();
+            foreach (var group in state.Groups)
+            {
+                Groups.Add(group);
+            }
+
+            // Datenquellen laden
+            DataSources.Clear();
+            foreach (var dataSource in state.DataSources)
+            {
+                DataSources.Add(dataSource);
+            }
+
+            // Abfragen laden
+            Queries.Clear();
+            foreach (var storedQuery in state.SavedQueries)
+            {
+                var query = new SearchQuery
+                {
+                    Id = storedQuery.Id,
+                    Name = storedQuery.Name,
+                    SearchTerm = storedQuery.SearchTerm,
+                    CreatedAt = storedQuery.CreatedAt
+                };
+                
+                foreach (var keyword in storedQuery.Labels)
+                {
+                    query.Labels.Add(new QueryLabel { Keyword = keyword });
+                }
+                
+                foreach (var dsId in storedQuery.SelectedDataSourceIds)
+                {
+                    query.SelectedDataSourceIds.Add(dsId);
+                }
+                
+                Queries.Add(query);
+            }
+        }
     }
 }

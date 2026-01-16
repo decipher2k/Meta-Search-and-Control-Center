@@ -1,6 +1,7 @@
 //Meta Search and Control Center (c) 2026 Dennis Michael Heine
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using MSCC.Localization;
 using MSCC.ViewModels;
 
 namespace MSCC.Scripting;
@@ -12,7 +13,7 @@ public class ScriptEditorViewModel : ViewModelBase
     
     private ConnectorScript? _currentScript;
     private string _sourceCode = string.Empty;
-    private string _statusMessage = "Bereit";
+    private string _statusMessage = string.Empty;
     private bool _isCompiling;
     private bool _hasUnsavedChanges;
     private int _cursorLine = 1;
@@ -78,7 +79,7 @@ public class ScriptEditorViewModel : ViewModelBase
         set => SetProperty(ref _cursorColumn, value);
     }
 
-    public string ScriptName => CurrentScript?.Metadata.Name ?? "Kein Script";
+    public string ScriptName => CurrentScript?.Metadata.Name ?? Strings.Instance.NoResults;
     public bool HasScript => CurrentScript != null;
 
     public ICommand CompileCommand { get; }
@@ -92,6 +93,7 @@ public class ScriptEditorViewModel : ViewModelBase
     {
         _scriptingService = scriptingService;
         _repository = repository;
+        _statusMessage = Strings.Instance.Ready;
 
         CompileCommand = new AsyncRelayCommand(CompileAsync, _ => HasScript && !IsCompiling);
         SaveCommand = new RelayCommand(_ => Save(), _ => HasScript && HasUnsavedChanges);
@@ -104,7 +106,7 @@ public class ScriptEditorViewModel : ViewModelBase
         CurrentScript = script;
         Errors.Clear();
         Warnings.Clear();
-        StatusMessage = $"Script '{script.Metadata.Name}' geladen";
+        StatusMessage = $"Script '{script.Metadata.Name}' loaded";
     }
 
     private async Task CompileAsync(object? parameter)
@@ -112,7 +114,7 @@ public class ScriptEditorViewModel : ViewModelBase
         if (CurrentScript == null) return;
 
         IsCompiling = true;
-        StatusMessage = "Kompiliere...";
+        StatusMessage = Strings.Instance.Compiling + "...";
         Errors.Clear();
         Warnings.Clear();
 
@@ -127,12 +129,12 @@ public class ScriptEditorViewModel : ViewModelBase
                 Warnings.Add(warning);
 
             StatusMessage = result.Success
-                ? $"Kompilierung erfolgreich - Konnektor registriert"
-                : $"Kompilierung fehlgeschlagen - {result.Errors.Count} Fehler";
+                ? Strings.Instance.CompileSuccess
+                : $"{Strings.Instance.CompileFailed} - {result.Errors.Count} {Strings.Instance.Errors}";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Fehler: {ex.Message}";
+            StatusMessage = $"{Strings.Instance.Error}: {ex.Message}";
         }
         finally
         {
@@ -150,11 +152,11 @@ public class ScriptEditorViewModel : ViewModelBase
         if (_repository.Save(CurrentScript))
         {
             HasUnsavedChanges = false;
-            StatusMessage = "Script gespeichert";
+            StatusMessage = Strings.Instance.Success;
         }
         else
         {
-            StatusMessage = "Fehler beim Speichern";
+            StatusMessage = Strings.Instance.Error;
         }
     }
 
@@ -182,7 +184,7 @@ public class ScriptEditorViewModel : ViewModelBase
 
         var template = templateName switch
         {
-            "search" => "\nresults.Add(CreateResult(\"Titel\", \"Beschreibung\", \"referenz\"));\n",
+            "search" => "\nresults.Add(CreateResult(\"Title\", \"Description\", \"reference\"));\n",
             "action" => "\ncase \"actionId\":\n    return Task.FromResult(true);\n",
             "config" => "\nnew ConnectorParameter { Name = \"Param\", DisplayName = \"Parameter\", IsRequired = true },\n",
             "detailview" => "\nreturn new DetailViewConfiguration { ViewType = DetailViewType.Default };\n",

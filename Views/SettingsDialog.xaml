@@ -1,0 +1,103 @@
+<Window x:Class="MSCC.Views.SettingsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Settings" 
+        Height="400" Width="500"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    
+    <Window.Resources>
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+            <Setter Property="Foreground" Value="#2C3E50"/>
+        </Style>
+        
+        <Style x:Key="SettingLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+    </Window.Resources>
+    
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Einstellungen -->
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Allgemein -->
+                <TextBlock x:Name="GeneralHeader" Text="General" 
+                           Style="{StaticResource SectionHeader}"/>
+                
+                <Border Background="#F8F9FA" CornerRadius="4" Padding="16" Margin="0,0,0,20">
+                    <StackPanel>
+                        <!-- Sprache -->
+                        <TextBlock x:Name="LanguageLabel" Text="Language" 
+                                   Style="{StaticResource SettingLabel}"/>
+                        <ComboBox x:Name="LanguageComboBox" 
+                                  Padding="8,6"
+                                  Margin="0,0,0,12"
+                                  SelectionChanged="LanguageComboBox_SelectionChanged">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding NativeName}" FontWeight="Medium"/>
+                                        <TextBlock Text=" (" Foreground="Gray"/>
+                                        <TextBlock Text="{Binding EnglishName}" Foreground="Gray"/>
+                                        <TextBlock Text=")" Foreground="Gray"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        
+                        <!-- Neustart-Hinweis -->
+                        <Border x:Name="RestartHintBorder" 
+                                Background="#FFF3CD" 
+                                BorderBrush="#FFEEBA" 
+                                BorderThickness="1" 
+                                CornerRadius="4" 
+                                Padding="12,8"
+                                Visibility="Collapsed">
+                            <TextBlock x:Name="RestartHintText" Text="Some changes require a restart" 
+                                       Foreground="#856404"
+                                       TextWrapping="Wrap"/>
+                        </Border>
+                    </StackPanel>
+                </Border>
+                
+                <!-- Darstellung -->
+                <TextBlock x:Name="AppearanceHeader" Text="Appearance" 
+                           Style="{StaticResource SectionHeader}"/>
+                
+                <Border Background="#F8F9FA" CornerRadius="4" Padding="16" Margin="0,0,0,20">
+                    <StackPanel>
+                        <CheckBox x:Name="StartMaximizedCheckBox" 
+                                  Content="Start maximized"
+                                  Margin="0,0,0,8"/>
+                        
+                        <CheckBox x:Name="RememberPositionCheckBox" 
+                                  Content="Remember window position"
+                                  IsChecked="True"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+        
+        <!-- Buttons -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="CancelBtn" Content="Cancel" 
+                    Padding="20,10" 
+                    Margin="0,0,8,0"
+                    Click="CancelButton_Click"/>
+            <Button x:Name="SaveBtn" Content="Save" 
+                    Padding="20,10"
+                    Background="#27AE60"
+                    Foreground="White"
+                    Click="SaveButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

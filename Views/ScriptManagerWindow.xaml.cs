@@ -1,6 +1,8 @@
 //Meta Search and Control Center (c) 2026 Dennis Michael Heine
+using System.ComponentModel;
 using System.Windows;
 using Microsoft.Win32;
+using MSCC.Localization;
 using MSCC.Scripting;
 
 namespace MSCC.Views;
@@ -23,7 +25,30 @@ public partial class ScriptManagerWindow : Window
         
         SetupEventHandlers();
         
+        // Auf Sprachwechsel reagieren
+        Strings.Instance.PropertyChanged += OnStringsPropertyChanged;
+        ApplyLocalization();
+        
         Loaded += async (s, e) => await _viewModel.LoadScriptsAsync();
+    }
+
+    private void OnStringsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        ApplyLocalization();
+    }
+
+    private void ApplyLocalization()
+    {
+        var loc = Strings.Instance;
+        
+        Title = loc.ScriptManager;
+        NewScriptButton.Content = "+ " + loc.NewScript;
+        CompileAllButton.Content = loc.Compile;
+        LoadingText.Text = loc.Loading + "...";
+        EditButton.Content = loc.Edit;
+        CompileButton.Content = loc.Compile;
+        SaveButton.Content = loc.Save;
+        DeleteButton.Content = loc.Delete;
     }
 
     private void SetupEventHandlers()
@@ -51,10 +76,11 @@ public partial class ScriptManagerWindow : Window
 
     private string? ShowOpenFileDialog(string filter)
     {
+        var loc = Strings.Instance;
         var dialog = new OpenFileDialog
         {
             Filter = filter,
-            Title = "Script importieren"
+            Title = "Import Script"
         };
 
         return dialog.ShowDialog() == true ? dialog.FileName : null;
@@ -62,11 +88,12 @@ public partial class ScriptManagerWindow : Window
 
     private string? ShowSaveFileDialog(string defaultFileName)
     {
+        var loc = Strings.Instance;
         var dialog = new SaveFileDialog
         {
-            Filter = "C# Script (*.cs)|*.cs|Alle Dateien (*.*)|*.*",
+            Filter = "C# Script (*.cs)|*.cs|All Files (*.*)|*.*",
             FileName = defaultFileName,
-            Title = "Script exportieren"
+            Title = "Export Script"
         };
 
         return dialog.ShowDialog() == true ? dialog.FileName : null;
@@ -74,6 +101,7 @@ public partial class ScriptManagerWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        Strings.Instance.PropertyChanged -= OnStringsPropertyChanged;
         _viewModel.OnEditRequested -= OpenEditor;
         _viewModel.OnImportFileRequested -= ShowOpenFileDialog;
         _viewModel.OnExportFileRequested -= ShowSaveFileDialog;

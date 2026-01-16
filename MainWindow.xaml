@@ -54,16 +54,18 @@
         
         <!-- Menüleiste -->
         <Menu Grid.Row="0" Background="#34495E" Padding="4">
-            <MenuItem Header="Datei" Style="{StaticResource TopMenuItemStyle}">
-                <MenuItem Header="Beenden" Style="{StaticResource SubMenuItemStyle}" Click="MenuItem_Exit_Click"/>
-            </MenuItem>
-            <MenuItem Header="Plugins" Style="{StaticResource TopMenuItemStyle}">
-                <MenuItem Header="Script Manager..." Style="{StaticResource SubMenuItemStyle}" Click="MenuItem_ScriptManager_Click"/>
+            <MenuItem x:Name="MenuFile" Header="File" Style="{StaticResource TopMenuItemStyle}">
+                <MenuItem x:Name="MenuSettings" Header="Settings..." Style="{StaticResource SubMenuItemStyle}" Click="MenuItem_Settings_Click"/>
                 <Separator/>
-                <MenuItem Header="Scripts neu laden" Style="{StaticResource SubMenuItemStyle}" Click="MenuItem_ReloadScripts_Click"/>
+                <MenuItem x:Name="MenuExit" Header="Exit" Style="{StaticResource SubMenuItemStyle}" Click="MenuItem_Exit_Click"/>
             </MenuItem>
-            <MenuItem Header="Hilfe" Style="{StaticResource TopMenuItemStyle}">
-                <MenuItem Header="Ueber MSCC" Style="{StaticResource SubMenuItemStyle}" Click="MenuItem_About_Click"/>
+            <MenuItem x:Name="MenuPlugins" Header="Plugins" Style="{StaticResource TopMenuItemStyle}">
+                <MenuItem x:Name="MenuScriptManager" Header="Script Manager..." Style="{StaticResource SubMenuItemStyle}" Click="MenuItem_ScriptManager_Click"/>
+                <Separator/>
+                <MenuItem x:Name="MenuReloadScripts" Header="Reload Scripts" Style="{StaticResource SubMenuItemStyle}" Click="MenuItem_ReloadScripts_Click"/>
+            </MenuItem>
+            <MenuItem x:Name="MenuHelp" Header="Help" Style="{StaticResource TopMenuItemStyle}">
+                <MenuItem x:Name="MenuAbout" Header="About MSCC" Style="{StaticResource SubMenuItemStyle}" Click="MenuItem_About_Click"/>
             </MenuItem>
         </Menu>
         
@@ -87,7 +89,8 @@
                 </TextBox>
                 
                 <Button Grid.Column="1" 
-                        Content="Suchen" 
+                        x:Name="SearchButton"
+                        Content="Search" 
                         Command="{Binding SearchCommand}"
                         Margin="8,0,0,0"
                         Padding="20,8"
@@ -97,7 +100,8 @@
                         BorderThickness="0"/>
                 
                 <Button Grid.Column="2" 
-                        Content="Abbrechen" 
+                        x:Name="CancelSearchButton"
+                        Content="Cancel" 
                         Command="{Binding CancelSearchCommand}"
                         Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}"
                         Margin="8,0,0,0"
@@ -135,18 +139,18 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Gruppen" Style="{StaticResource HeaderStyle}"/>
+                        <TextBlock x:Name="GroupsHeader" Text="Groups" Style="{StaticResource HeaderStyle}"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal">
                             <Button Content="+" 
                                     Command="{Binding AddGroupCommand}"
-                                    ToolTip="Neue Gruppe"
+                                    ToolTip="New Group"
                                     Width="24" Height="24" 
                                     FontSize="14" FontWeight="Bold"
                                     Background="#27AE60" Foreground="White" 
                                     BorderThickness="0" Padding="0"/>
                             <Button Content="E" 
                                     Command="{Binding EditGroupCommand}"
-                                    ToolTip="Gruppe bearbeiten"
+                                    ToolTip="Edit Group"
                                     Width="24" Height="24" 
                                     FontSize="12"
                                     Background="#3498DB" Foreground="White" 
@@ -154,7 +158,7 @@
                                     Margin="4,0,0,0"/>
                             <Button Content="X" 
                                     Command="{Binding DeleteGroupCommand}"
-                                    ToolTip="Gruppe loeschen"
+                                    ToolTip="Delete Group"
                                     Width="24" Height="24" 
                                     FontSize="12"
                                     Background="#E74C3C" Foreground="White" 
@@ -190,18 +194,18 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Datenquellen" Style="{StaticResource HeaderStyle}" Margin="0"/>
+                        <TextBlock x:Name="DataSourcesHeader" Text="Data Sources" Style="{StaticResource HeaderStyle}" Margin="0"/>
                         <StackPanel Grid.Column="1" Orientation="Horizontal">
                             <Button Content="+" 
                                     Command="{Binding AddDataSourceCommand}"
-                                    ToolTip="Neue Datenquelle"
+                                    ToolTip="New Data Source"
                                     Width="24" Height="24" 
                                     FontSize="14" FontWeight="Bold"
                                     Background="#27AE60" Foreground="White" 
                                     BorderThickness="0" Padding="0"/>
                             <Button Content="E" 
                                     Command="{Binding EditDataSourceCommand}"
-                                    ToolTip="Datenquelle bearbeiten"
+                                    ToolTip="Edit Data Source"
                                     Width="24" Height="24" 
                                     FontSize="12"
                                     Background="#3498DB" Foreground="White" 
@@ -209,7 +213,7 @@
                                     Margin="4,0,0,0"/>
                             <Button Content="X" 
                                     Command="{Binding DeleteDataSourceCommand}"
-                                    ToolTip="Datenquelle loeschen"
+                                    ToolTip="Delete Data Source"
                                     Width="24" Height="24" 
                                     FontSize="12"
                                     Background="#E74C3C" Foreground="White" 
@@ -256,7 +260,7 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         
-                        <TextBlock Grid.Row="0" Text="Suchergebnisse" Style="{StaticResource HeaderStyle}"/>
+                        <TextBlock Grid.Row="0" x:Name="SearchResultsHeader" Text="Search Results" Style="{StaticResource HeaderStyle}"/>
                         
                         <!-- Ladeindikator -->
                         <StackPanel Grid.Row="1" 
@@ -264,7 +268,7 @@
                                     HorizontalAlignment="Center" 
                                     VerticalAlignment="Center">
                             <ProgressBar IsIndeterminate="True" Width="200" Height="4"/>
-                            <TextBlock Text="Suche laeuft..." 
+                            <TextBlock x:Name="SearchingText" Text="Searching..." 
                                        HorizontalAlignment="Center" 
                                        Margin="0,8,0,0"/>
                         </StackPanel>
@@ -363,32 +367,33 @@
                                                                         Padding="4,0,0,0"
                                                                         FontSize="11"
                                                                         Cursor="Hand"/>
-                                                            </StackPanel>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </Grid>
-                </Border>
-                
-                <!-- Detailansicht -->
-                <Border Grid.Column="1" Style="{StaticResource CardStyle}">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        
-                        <TextBlock Grid.Row="0" Text="Detailansicht" Style="{StaticResource HeaderStyle}"/>
-                        
-                        <!-- Platzhalter wenn nichts ausgewählt -->
-                        <TextBlock Grid.Row="1" 
-                                   Text="Wählen Sie ein Suchergebnis aus, um Details anzuzeigen."
+															</StackPanel>
+														</Border>
+													</DataTemplate>
+												</ItemsControl.ItemTemplate>
+											</ItemsControl>
+										</Grid>
+									</Border>
+								</DataTemplate>
+							</ListBox.ItemTemplate>
+						</ListBox>
+					</Grid>
+				</Border>
+				
+				<!-- Detailansicht -->
+				<Border Grid.Column="1" Style="{StaticResource CardStyle}">
+					<Grid>
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="*"/>
+						</Grid.RowDefinitions>
+						
+						<TextBlock Grid.Row="0" x:Name="DetailViewHeader" Text="Detail View" Style="{StaticResource HeaderStyle}"/>
+						
+						<!-- Platzhalter wenn nichts ausgewählt -->
+						<TextBlock Grid.Row="1" 
+                                   x:Name="SelectResultText"
+                                   Text="Select a search result to view details."
                                    Foreground="Gray"
                                    FontStyle="Italic"
                                    VerticalAlignment="Center"
@@ -396,131 +401,133 @@
                                    TextWrapping="Wrap"
                                    TextAlignment="Center"
                                    Visibility="{Binding SelectedResult, Converter={StaticResource NullToVis}, ConverterParameter=Invert}"/>
-                        
-                        <ContentControl Grid.Row="1" 
-                                        x:Name="DetailViewContainer"
-                                        Visibility="{Binding SelectedResult, Converter={StaticResource NullToVis}}"/>
-                    </Grid>
-                </Border>
-            </Grid>
-            
-            <!-- Rechte Seitenleiste: Labels und gespeicherte Abfragen -->
-            <Border Grid.Column="2" Style="{StaticResource CardStyle}">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    
-                    <!-- Label hinzufuegen -->
-                    <TextBlock Grid.Row="0" Text="Label hinzufuegen" Style="{StaticResource HeaderStyle}"/>
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBox Grid.Column="0" 
-                                 Text="{Binding SelectedResult.NewLabel, UpdateSourceTrigger=PropertyChanged}"
-                                 Padding="8,6"
-                                 IsEnabled="{Binding SelectedResult, Converter={StaticResource NullToBool}}">
-                            <TextBox.InputBindings>
-                                <KeyBinding Key="Enter" Command="{Binding AddLabelCommand}"/>
-                            </TextBox.InputBindings>
-                        </TextBox>
-                        <Button Grid.Column="1" 
-                                Content="+" 
-                                Command="{Binding AddLabelCommand}"
-                                Padding="12,6"
-                                Margin="4,0,0,0"
-                                Background="#27AE60"
-                                Foreground="White"
-                                BorderThickness="0"
-                                FontWeight="Bold"/>
-                    </Grid>
-                    <TextBlock Grid.Row="2" 
-                               Text="Waehlen Sie ein Ergebnis aus"
-                               FontSize="11"
-                               Foreground="Gray"
-                               TextWrapping="Wrap"
-                               Margin="0,4,0,16"/>
-                    
-                    <!-- Keyword-Suche -->
-                    <TextBlock Grid.Row="3" Text="Keyword-Suche" Style="{StaticResource HeaderStyle}"/>
-                    <StackPanel Grid.Row="3" Margin="0,24,0,0">
-                        <TextBox x:Name="KeywordSearchBox" Padding="8,6"/>
-                        <Button Content="Nach Keyword suchen"
-                                Command="{Binding SearchByKeywordCommand}"
-                                CommandParameter="{Binding Text, ElementName=KeywordSearchBox}"
-                                Margin="0,8,0,0"
-                                Padding="8,6"/>
-                    </StackPanel>
-                    
-                    <!-- Abfrage speichern -->
-                    <StackPanel Grid.Row="4" Margin="0,16,0,0">
-                        <TextBlock Text="Aktuelle Abfrage" Style="{StaticResource HeaderStyle}"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox x:Name="QueryNameBox" Padding="8,6" Text="Meine Abfrage"/>
-                            <Button Grid.Column="1" 
-                                    Content="Speichern"
-                                    Command="{Binding SaveQueryCommand}"
-                                    CommandParameter="{Binding Text, ElementName=QueryNameBox}"
-                                    Padding="12,6"
-                                    Margin="4,0,0,0"/>
-                        </Grid>
-                    </StackPanel>
-                    
-                    <!-- Gespeicherte Abfragen -->
-                    <TextBlock Grid.Row="5" Text="Gespeicherte Abfragen" Style="{StaticResource HeaderStyle}" Margin="0,16,0,8"/>
-                    <ListBox Grid.Row="5" 
-                             ItemsSource="{Binding SavedQueries}"
-                             BorderThickness="0"
-                             Margin="0,32,0,0">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Border BorderBrush="#E0E0E0" 
-                                        BorderThickness="0,0,0,1" 
-                                        Padding="4" 
-                                        Margin="0,0,0,2">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding Name}" FontWeight="Medium"/>
-                                            <TextBlock Text="{Binding SearchTerm, StringFormat=Suche: {0}}" 
-                                                       FontSize="11" 
-                                                       Foreground="Gray"/>
-                                            <TextBlock Text="{Binding Labels.Count, StringFormat={}{0} Labels}" 
-                                                       FontSize="11" 
-                                                       Foreground="#3498DB"/>
-                                        </StackPanel>
-                                        <Button Grid.Column="1" 
-                                                Content="Laden"
-                                                Command="{Binding DataContext.LoadQueryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                CommandParameter="{Binding Id}"
-                                                Padding="8,4"
-                                                FontSize="11"/>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </Grid>
-            </Border>
-        </Grid>
-        
-        <!-- Statusleiste -->
-        <Border Grid.Row="3" Background="#34495E" Padding="12,8">
-            <TextBlock Text="{Binding StatusMessage}" Foreground="White" FontSize="12"/>
-        </Border>
-    </Grid>
+						
+						<ContentControl Grid.Row="1" 
+										x:Name="DetailViewContainer"
+										Visibility="{Binding SelectedResult, Converter={StaticResource NullToVis}}"/>
+					</Grid>
+				</Border>
+			</Grid>
+			
+			<!-- Rechte Seitenleiste: Labels und gespeicherte Abfragen -->
+			<Border Grid.Column="2" Style="{StaticResource CardStyle}">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="*"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="*"/>
+					</Grid.RowDefinitions>
+					
+					<!-- Label hinzufuegen -->
+					<TextBlock Grid.Row="0" x:Name="AddLabelHeader" Text="Add Label" Style="{StaticResource HeaderStyle}"/>
+					<Grid Grid.Row="1">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*"/>
+							<ColumnDefinition Width="Auto"/>
+						</Grid.ColumnDefinitions>
+						<TextBox Grid.Column="0" 
+								 Text="{Binding SelectedResult.NewLabel, UpdateSourceTrigger=PropertyChanged}"
+								 Padding="8,6"
+								 IsEnabled="{Binding SelectedResult, Converter={StaticResource NullToBool}}">
+							<TextBox.InputBindings>
+								<KeyBinding Key="Enter" Command="{Binding AddLabelCommand}"/>
+							</TextBox.InputBindings>
+						</TextBox>
+						<Button Grid.Column="1" 
+								Content="+" 
+								Command="{Binding AddLabelCommand}"
+								Padding="12,6"
+								Margin="4,0,0,0"
+								Background="#27AE60"
+								Foreground="White"
+								BorderThickness="0"
+								FontWeight="Bold"/>
+					</Grid>
+					<TextBlock Grid.Row="2" 
+							   x:Name="SelectResultFirstText"
+							   Text="Select a result first"
+							   FontSize="11"
+							   Foreground="Gray"
+							   TextWrapping="Wrap"
+							   Margin="0,4,0,16"/>
+					
+					<!-- Keyword-Suche -->
+					<TextBlock Grid.Row="3" x:Name="KeywordSearchHeader" Text="Keyword Search" Style="{StaticResource HeaderStyle}"/>
+					<StackPanel Grid.Row="3" Margin="0,24,0,0">
+						<TextBox x:Name="KeywordSearchBox" Padding="8,6"/>
+						<Button x:Name="SearchByKeywordButton" Content="Search by Keyword"
+								Command="{Binding SearchByKeywordCommand}"
+								CommandParameter="{Binding Text, ElementName=KeywordSearchBox}"
+								Margin="0,8,0,0"
+								Padding="8,6"/>
+					</StackPanel>
+					
+					<!-- Abfrage speichern -->
+					<StackPanel Grid.Row="4" Margin="0,16,0,0">
+						<TextBlock x:Name="CurrentQueryHeader" Text="Current Query" Style="{StaticResource HeaderStyle}"/>
+						<Grid>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="Auto"/>
+							</Grid.ColumnDefinitions>
+							<TextBox x:Name="QueryNameBox" Padding="8,6" Text="Query"/>
+							<Button Grid.Column="1" 
+									x:Name="SaveQueryButton"
+									Content="Save"
+									Command="{Binding SaveQueryCommand}"
+									CommandParameter="{Binding Text, ElementName=QueryNameBox}"
+									Padding="12,6"
+									Margin="4,0,0,0"/>
+						</Grid>
+					</StackPanel>
+					
+					<!-- Gespeicherte Abfragen -->
+					<TextBlock Grid.Row="5" x:Name="SavedQueriesHeader" Text="Saved Queries" Style="{StaticResource HeaderStyle}" Margin="0,16,0,8"/>
+					<ListBox Grid.Row="5" 
+							 ItemsSource="{Binding SavedQueries}"
+							 BorderThickness="0"
+							 Margin="0,32,0,0">
+						<ListBox.ItemTemplate>
+							<DataTemplate>
+								<Border BorderBrush="#E0E0E0" 
+										BorderThickness="0,0,0,1" 
+										Padding="4" 
+										Margin="0,0,0,2">
+									<Grid>
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="*"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+										<StackPanel>
+											<TextBlock Text="{Binding Name}" FontWeight="Medium"/>
+											<TextBlock Text="{Binding SearchTerm, StringFormat=Search: {0}}" 
+													   FontSize="11" 
+													   Foreground="Gray"/>
+											<TextBlock Text="{Binding Labels.Count, StringFormat={}{0} Labels}" 
+													   FontSize="11" 
+													   Foreground="#3498DB"/>
+										</StackPanel>
+										<Button Grid.Column="1" 
+												Content="Load"
+												Command="{Binding DataContext.LoadQueryCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+												CommandParameter="{Binding Id}"
+												Padding="8,4"
+												FontSize="11"/>
+									</Grid>
+								</Border>
+							</DataTemplate>
+						</ListBox.ItemTemplate>
+					</ListBox>
+				</Grid>
+			</Border>
+		</Grid>
+		
+		<!-- Statusleiste -->
+		<Border Grid.Row="3" Background="#34495E" Padding="12,8">
+			<TextBlock Text="{Binding StatusMessage}" Foreground="White" FontSize="12"/>
+		</Border>
+	</Grid>
 </Window>

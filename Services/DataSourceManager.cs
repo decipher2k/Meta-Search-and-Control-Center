@@ -33,6 +33,7 @@ public class DataSourceManager
         };
 
         GlobalState.AddGroup(group);
+        _ = SaveAsync();
         return group;
     }
 
@@ -52,6 +53,7 @@ public class DataSourceManager
         if (color != null)
             group.Color = color;
 
+        _ = SaveAsync();
         return true;
     }
 
@@ -113,6 +115,7 @@ public class DataSourceManager
         _connectorInstances[dataSource.Id] = connectorInstance;
         GlobalState.AddDataSource(dataSource);
 
+        await SaveAsync();
         return dataSource;
     }
 
@@ -172,6 +175,8 @@ public class DataSourceManager
         {
             GlobalState.DataSources.Remove(dataSource);
         }
+
+        _ = SaveAsync();
     }
 
     /// <summary>
@@ -201,6 +206,8 @@ public class DataSourceManager
         {
             GlobalState.Groups.Remove(group);
         }
+
+        _ = SaveAsync();
     }
 
     /// <summary>
@@ -210,6 +217,47 @@ public class DataSourceManager
     {
         RegisterConnector(new FileSystemConnector());
         RegisterConnector(new MockDatabaseConnector());
+    }
+
+    /// <summary>
+    /// Lädt gespeicherte Datenquellen und initialisiert ihre Konnektoren.
+    /// </summary>
+    public async Task LoadSavedDataSourcesAsync()
+    {
+        await GlobalState.LoadStateAsync();
+
+        // Initialisiere Konnektoren für alle geladenen Datenquellen
+        foreach (var dataSource in GlobalState.DataSources.ToList())
+        {
+            if (!GlobalState.Connectors.TryGetValue(dataSource.ConnectorId, out var connectorTemplate))
+            {
+                // Konnektor nicht mehr verfügbar - überspringen
+                continue;
+            }
+
+            var connectorInstance = CreateConnectorInstance(connectorTemplate);
+            if (connectorInstance != null)
+            {
+                var success = await connectorInstance.InitializeAsync(dataSource.Configuration);
+                if (success)
+                {
+                    _connectorInstances[dataSource.Id] = connectorInstance;
+                }
+                else
+                {
+                    connectorInstance.Dispose();
+                    dataSource.IsEnabled = false;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Speichert den aktuellen Zustand.
+    /// </summary>
+    public async Task SaveAsync()
+    {
+        await GlobalState.SaveStateAsync();
     }
 
     private static IDataSourceConnector? CreateConnectorInstance(IDataSourceConnector template)
@@ -308,6 +356,7 @@ public class DataSourceManager
             }
         }
 
+        await SaveAsync();
         return true;
     }
 
@@ -321,6 +370,7 @@ public class DataSourceManager
             return false;
 
         dataSource.GroupId = groupId;
+        _ = SaveAsync();
         return true;
     }
 

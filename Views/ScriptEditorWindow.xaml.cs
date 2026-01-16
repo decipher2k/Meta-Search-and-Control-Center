@@ -1,6 +1,8 @@
 //Meta Search and Control Center (c) 2026 Dennis Michael Heine
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using MSCC.Localization;
 using MSCC.Scripting;
 
 namespace MSCC.Views;
@@ -17,6 +19,30 @@ public partial class ScriptEditorWindow : Window
 
         SetupEditor();
         SetupBindings();
+        
+        // Auf Sprachwechsel reagieren
+        Strings.Instance.PropertyChanged += OnStringsPropertyChanged;
+        ApplyLocalization();
+    }
+
+    private void OnStringsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        ApplyLocalization();
+    }
+
+    private void ApplyLocalization()
+    {
+        var loc = Strings.Instance;
+        
+        Title = loc.ScriptEditor;
+        SaveToolbarButton.Content = loc.Save;
+        CompileToolbarButton.Content = loc.Compile;
+        ValidateToolbarButton.Content = loc.Validate;
+        InsertMenuItem.Header = loc.Insert;
+        ErrorsTab.Header = loc.Errors;
+        WarningsTab.Header = loc.Warnings;
+        LineLabel.Text = loc.Line + " ";
+        ColumnLabel.Text = loc.Column + " ";
     }
 
     private void SetupEditor()
@@ -92,6 +118,7 @@ public partial class ScriptEditorWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        Strings.Instance.PropertyChanged -= OnStringsPropertyChanged;
         _viewModel.OnTemplateInsertRequested -= InsertTemplate;
         base.OnClosed(e);
     }
