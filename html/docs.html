@@ -57,6 +57,7 @@
                     <h3>Plugin Development</h3>
                     <ul>
                         <li><a href="#script-plugins">Script Plugins</a></li>
+                        <li><a href="#detail-views">Detail Views</a></li>
                         <li><a href="#compiled-plugins">Compiled Plugins</a></li>
                         <li><a href="#api-reference">API Reference</a></li>
                     </ul>
@@ -241,6 +242,202 @@ dotnet run</code></pre>
     }
 }</code></pre>
                     </div>
+
+                    <h3>Customizing the Detail View</h3>
+                    <p>
+                        When a user clicks on a search result, the detail view displays additional information.
+                        You can customize this by overriding <code>GetDetailViewConfiguration()</code>.
+                    </p>
+
+                    <h4>Available ViewTypes</h4>
+                    <table class="docs-table">
+                        <thead>
+                            <tr>
+                                <th>ViewType</th>
+                                <th>Description</th>
+                                <th>Required Properties</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>Default</code></td>
+                                <td>Standard text view with key-value pairs</td>
+                                <td><code>DisplayProperties</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>Table</code></td>
+                                <td>Tabular data display</td>
+                                <td><code>TableColumns</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>Chart</code></td>
+                                <td>Bar, Line, or Pie charts</td>
+                                <td><code>ChartConfig</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>Media</code></td>
+                                <td>Image/Video preview</td>
+                                <td><code>MediaPathProperty</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>Custom</code></td>
+                                <td>Custom WPF control</td>
+                                <td>Override <code>CreateCustomDetailView()</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Example: Detail View with Actions</h4>
+                    <div class="code-block">
+                        <pre><code class="language-csharp">public override DetailViewConfiguration GetDetailViewConfiguration(SearchResult result)
+{
+    return new DetailViewConfiguration
+    {
+        ViewType = DetailViewType.Default,
+        
+        // Which metadata properties to display
+        DisplayProperties = new List&lt;string&gt; 
+        { 
+            "Author", 
+            "CreatedDate", 
+            "FileSize" 
+        },
+        
+        // Define available actions
+        Actions = new List&lt;ResultAction&gt;
+        {
+            new ResultAction 
+            { 
+                Id = "open", 
+                Name = "Open", 
+                Icon = "&#128194;",
+                Description = "Open the file"
+            },
+            new ResultAction 
+            { 
+                Id = "copy-path", 
+                Name = "Copy Path", 
+                Icon = "&#128203;" 
+            }
+        }
+    };
+}
+
+// Handle action execution
+public override Task&lt;bool&gt; ExecuteActionAsync(SearchResult result, string actionId)
+{
+    switch (actionId)
+    {
+        case "open":
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = result.OriginalReference,
+                UseShellExecute = true
+            });
+            return Task.FromResult(true);
+            
+        case "copy-path":
+            System.Windows.Clipboard.SetText(result.OriginalReference);
+            return Task.FromResult(true);
+            
+        default:
+            return Task.FromResult(false);
+    }
+}</code></pre>
+                    </div>
+
+                    <h4>Example: Table View</h4>
+                    <div class="code-block">
+                        <pre><code class="language-csharp">public override DetailViewConfiguration GetDetailViewConfiguration(SearchResult result)
+{
+    return new DetailViewConfiguration
+    {
+        ViewType = DetailViewType.Table,
+        TableColumns = new List&lt;TableColumnDefinition&gt;
+        {
+            new TableColumnDefinition 
+            { 
+                PropertyName = "Name", 
+                Header = "Name", 
+                Width = "*" 
+            },
+            new TableColumnDefinition 
+            { 
+                PropertyName = "Size", 
+                Header = "Size", 
+                Width = "100",
+                Format = "{0:N0} KB"
+            },
+            new TableColumnDefinition 
+            { 
+                PropertyName = "Modified", 
+                Header = "Modified", 
+                Width = "150",
+                Format = "{0:yyyy-MM-dd HH:mm}"
+            }
+        }
+    };
+}</code></pre>
+                    </div>
+
+                    <h4>Example: Custom WPF View</h4>
+                    <div class="code-block">
+                        <pre><code class="language-csharp">public override DetailViewConfiguration GetDetailViewConfiguration(SearchResult result)
+{
+    return new DetailViewConfiguration
+    {
+        ViewType = DetailViewType.Custom
+    };
+}
+
+public override FrameworkElement? CreateCustomDetailView(SearchResult result)
+{
+    var panel = new StackPanel { Margin = new Thickness(10) };
+    
+    // Title
+    panel.Children.Add(new TextBlock 
+    { 
+        Text = result.Title, 
+        FontWeight = FontWeights.Bold,
+        FontSize = 18
+    });
+    
+    // Description
+    panel.Children.Add(new TextBlock 
+    { 
+        Text = result.Description,
+        TextWrapping = TextWrapping.Wrap
+    });
+    
+    // Action button
+    var button = new Button 
+    { 
+        Content = "Open Item",
+        Padding = new Thickness(20, 8, 20, 8),
+        Margin = new Thickness(0, 15, 0, 0)
+    };
+    button.Click += async (s, e) =&gt; await ExecuteActionAsync(result, "open");
+    panel.Children.Add(button);
+    
+    return panel;
+}</code></pre>
+                    </div>
+
+                    <h4>Tips for Detail Views</h4>
+                    <ul>
+                        <li><strong>Use Metadata:</strong> Store all displayable data in <code>SearchResult.Metadata</code> during search</li>
+                        <li><strong>Keep Actions Simple:</strong> Each action should have a clear, single purpose</li>
+                        <li><strong>Handle Errors:</strong> Wrap action execution in try-catch blocks</li>
+                        <li><strong>Use Icons:</strong> Emojis work well as action icons (&#128194;, &#128203;, &#128279;, &#9998;, &#128465;)</li>
+                    </ul>
+                </section>
+
+                <section id="detail-views">
+                    <h2>Detail Views</h2>
+                    <p>
+                        Detail views are used to display additional information about a search result.
+                        You can customize the layout and content of detail views for each connector.
+                    </p>
                 </section>
 
                 <section id="compiled-plugins">

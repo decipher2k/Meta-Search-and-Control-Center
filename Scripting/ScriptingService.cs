@@ -286,11 +286,65 @@ namespace MSCC.Scripts
             for (int i = 1; i <= Math.Min(10, maxResults); i++)
             {{
                 if (cancellationToken.IsCancellationRequested) break;
-                results.Add(CreateResult($""Ergebnis {{i}}"", $""Beschreibung {{i}}"", $""ref-{{i}}""));
+                
+                results.Add(new SearchResult
+                {{
+                    Title = $""Ergebnis {{i}}: {{searchTerm}}"",
+                    Description = $""Beschreibung für Ergebnis {{i}}"",
+                    SourceName = Name,
+                    ConnectorId = Id,
+                    OriginalReference = $""ref-{{i}}"",
+                    RelevanceScore = 100 - (i * 5),
+                    Metadata = new Dictionary<string, object>
+                    {{
+                        [""Author""] = ""Beispiel-Autor"",
+                        [""CreatedDate""] = DateTime.Now.ToString(""yyyy-MM-dd""),
+                        [""Category""] = ""Beispiel""
+                    }}
+                }});
             }}
 
             await Task.Delay(100, cancellationToken);
             return results;
+        }}
+
+        // Konfiguriert die Detailansicht für Suchergebnisse
+        public override DetailViewConfiguration GetDetailViewConfiguration(SearchResult result)
+        {{
+            return new DetailViewConfiguration
+            {{
+                ViewType = DetailViewType.Default,
+                
+                // Welche Metadaten-Eigenschaften angezeigt werden
+                DisplayProperties = new List<string> {{ ""Author"", ""CreatedDate"", ""Category"" }},
+                
+                // Verfügbare Aktionen
+                Actions = new List<ResultAction>
+                {{
+                    new ResultAction {{ Id = ""open"", Name = ""Öffnen"", Icon = ""??"" }},
+                    new ResultAction {{ Id = ""copy"", Name = ""Kopieren"", Icon = ""??"" }}
+                }}
+            }};
+        }}
+
+        // Führt eine Aktion auf einem Suchergebnis aus
+        public override Task<bool> ExecuteActionAsync(SearchResult result, string actionId)
+        {{
+            switch (actionId)
+            {{
+                case ""open"":
+                    // TODO: Öffnen-Logik implementieren
+                    Log($""Öffne: {{result.OriginalReference}}"");
+                    return Task.FromResult(true);
+                    
+                case ""copy"":
+                    // In Zwischenablage kopieren
+                    Clipboard.SetText(result.OriginalReference);
+                    return Task.FromResult(true);
+                    
+                default:
+                    return Task.FromResult(false);
+            }}
         }}
     }}
 }}

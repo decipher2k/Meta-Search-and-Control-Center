@@ -28,11 +28,6 @@ An extensible meta search engine for Windows that can search multiple data sourc
 - **Saved Queries**: Save and load frequently used searches
 - **Extensible**: Add custom connectors via script or as compiled plugins
 
-
-<img width="1919" height="1004" alt="Unbenannt" src="https://github.com/user-attachments/assets/c585fcac-0758-42d8-a606-a16c5c7a57c7" />
-
-
-
 ### Built-in Connectors
 
 | Connector | Description |
@@ -554,6 +549,246 @@ Scripts are saved under:
 Each script consists of two files:
 - `ScriptName_<id>.cs` - The source code
 - `ScriptName_<id>.cs.meta` - Metadata (name, version, etc.)
+
+#### Customizing the Detail View
+
+When a user clicks on a search result, the detail view shows additional information. You can customize this view by overriding `GetDetailViewConfiguration()` and optionally `ExecuteActionAsync()`.
+
+##### Default Implementation
+
+The base class automatically displays all metadata properties:
+
+```csharp
+public virtual DetailViewConfiguration GetDetailViewConfiguration(SearchResult result)
+{
+    return new DetailViewConfiguration
+    {
+        ViewType = DetailViewType.Default,
+        DisplayProperties = result.Metadata.Keys.ToList()
+    };
+}
+```
+
+##### Available ViewTypes
+
+| ViewType | Description | Required Properties |
+|----------|-------------|---------------------|
+| `Default` | Standard text view with key-value pairs | `DisplayProperties` |
+| `Table` | Tabular data display | `TableColumns` |
+| `Chart` | Bar, Line, or Pie charts | `ChartConfig` |
+| `Media` | Image/Video preview | `MediaPathProperty` |
+| `Custom` | Custom WPF control | Override `CreateCustomDetailView()` |
+
+##### Example: Custom Detail View with Actions
+
+```csharp
+public override DetailViewConfiguration GetDetailViewConfiguration(SearchResult result)
+{
+    return new DetailViewConfiguration
+    {
+        ViewType = DetailViewType.Default,
+        
+        // Which metadata properties to display
+        DisplayProperties = new List<string> 
+        { 
+            "Author", 
+            "CreatedDate", 
+            "FileSize",
+            "Category"
+        },
+        
+        // Define available actions
+        Actions = new List<ResultAction>
+        {
+            new ResultAction 
+            { 
+                Id = "open", 
+                Name = "Open", 
+                Icon = "??",
+                Description = "Open the file in default application"
+            },
+            new ResultAction 
+            { 
+                Id = "copy-path", 
+                Name = "Copy Path", 
+                Icon = "??" 
+            },
+            new ResultAction 
+            { 
+                Id = "open-folder", 
+                Name = "Open Folder", 
+                Icon = "??" 
+            }
+        }
+    };
+}
+
+// Handle action execution
+public override Task<bool> ExecuteActionAsync(SearchResult result, string actionId)
+{
+    switch (actionId)
+    {
+        case "open":
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = result.OriginalReference,
+                UseShellExecute = true
+            });
+            return Task.FromResult(true);
+            
+        case "copy-path":
+            System.Windows.Clipboard.SetText(result.OriginalReference);
+            return Task.FromResult(true);
+            
+        case "open-folder":
+            var folder = System.IO.Path.GetDirectoryName(result.OriginalReference);
+            if (!string.IsNullOrEmpty(folder))
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = folder,
+                    UseShellExecute = true
+                });
+            }
+            return Task.FromResult(true);
+            
+        default:
+            return Task.FromResult(false);
+    }
+}
+```
+
+##### Example: Table View
+
+For displaying structured data in a table format:
+
+```csharp
+public override DetailViewConfiguration GetDetailViewConfiguration(SearchResult result)
+{
+    return new DetailViewConfiguration
+    {
+        ViewType = DetailViewType.Table,
+        TableColumns = new List<TableColumnDefinition>
+        {
+            new TableColumnDefinition 
+            { 
+                PropertyName = "Name", 
+                Header = "Name", 
+                Width = "*" 
+            },
+            new TableColumnDefinition 
+            { 
+                PropertyName = "Size", 
+                Header = "Size", 
+                Width = "100",
+                Format = "{0:N0} KB"
+            },
+            new TableColumnDefinition 
+            { 
+                PropertyName = "Modified", 
+                Header = "Modified", 
+                Width = "150",
+                Format = "{0:yyyy-MM-dd HH:mm}"
+            }
+        },
+        Actions = new List<ResultAction>
+        {
+            new ResultAction { Id = "open", Name = "Open", Icon = "??" }
+        }
+    };
+}
+```
+
+##### Example: Fully Custom WPF View
+
+For complete control over the detail view, create a custom WPF control:
+
+```csharp
+public override DetailViewConfiguration GetDetailViewConfiguration(SearchResult result)
+{
+    return new DetailViewConfiguration
+    {
+        ViewType = DetailViewType.Custom
+    };
+}
+
+public override FrameworkElement? CreateCustomDetailView(SearchResult result)
+{
+    // Create a custom panel
+    var panel = new StackPanel { Margin = new Thickness(10) };
+    
+    // Title
+    panel.Children.Add(new TextBlock 
+    { 
+        Text = result.Title, 
+        FontWeight = FontWeights.Bold,
+        FontSize = 18,
+        Margin = new Thickness(0, 0, 0, 10)
+    });
+    
+    // Description
+    panel.Children.Add(new TextBlock 
+    { 
+        Text = result.Description,
+        TextWrapping = TextWrapping.Wrap,
+        Margin = new Thickness(0, 0, 0, 10)
+    });
+    
+    // Metadata as a grid
+    var grid = new Grid();
+    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+    
+    int row = 0;
+    foreach (var kvp in result.Metadata)
+    {
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        
+        var keyText = new TextBlock 
+        { 
+            Text = kvp.Key + ":", 
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 2, 10, 2)
+        };
+        Grid.SetRow(keyText, row);
+        Grid.SetColumn(keyText, 0);
+        grid.Children.Add(keyText);
+        
+        var valueText = new TextBlock 
+        { 
+            Text = kvp.Value?.ToString() ?? "",
+            Margin = new Thickness(0, 2, 0, 2)
+        };
+        Grid.SetRow(valueText, row);
+        Grid.SetColumn(valueText, 1);
+        grid.Children.Add(valueText);
+        
+        row++;
+    }
+    panel.Children.Add(grid);
+    
+    // Action button
+    var button = new Button 
+    { 
+        Content = "Open Item",
+        Padding = new Thickness(20, 8, 20, 8),
+        Margin = new Thickness(0, 15, 0, 0),
+        HorizontalAlignment = HorizontalAlignment.Left
+    };
+    button.Click += async (s, e) => await ExecuteActionAsync(result, "open");
+    panel.Children.Add(button);
+    
+    return panel;
+}
+```
+
+##### Tips for Detail Views
+
+1. **Use Metadata**: Store all displayable data in `SearchResult.Metadata` during search
+2. **Keep Actions Simple**: Each action should have a clear, single purpose
+3. **Handle Errors**: Wrap action execution in try-catch blocks
+4. **Use Icons**: Emojis work well as icons (??, ??, ??, ??, ???)
+5. **Consider Localization**: Use constants or resources for action names
 
 ---
 
