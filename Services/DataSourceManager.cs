@@ -217,6 +217,7 @@ public class DataSourceManager
     {
         RegisterConnector(new FileSystemConnector());
         RegisterConnector(new MockDatabaseConnector());
+        RegisterConnector(new MicrosoftGraphConnector());
     }
 
     /// <summary>
@@ -268,6 +269,9 @@ public class DataSourceManager
         
         if (template is MockDatabaseConnector)
             return new MockDatabaseConnector();
+        
+        if (template is MicrosoftGraphConnector)
+            return new MicrosoftGraphConnector();
         
         // Gescriptete Konnektoren - versuche neue Instanz über Reflection zu erstellen
         if (template is ScriptedConnectorBase)

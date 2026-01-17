@@ -8,6 +8,7 @@ An extensible meta search engine for Windows that can search multiple data sourc
 - [Installation](#installation)
 - [User Interface](#user-interface)
 - [Connectors and Data Sources](#connectors-and-data-sources)
+  - [Microsoft 365 Connector](#microsoft-365-connector)
 - [Plugin Development](#plugin-development)
   - [Option 1: Script-based Plugins](#option-1-script-based-plugins)
   - [Option 2: Compiled Plugins (Visual Studio)](#option-2-compiled-plugins-visual-studio)
@@ -31,6 +32,7 @@ An extensible meta search engine for Windows that can search multiple data sourc
 | Connector | Description |
 |-----------|-------------|
 | **File System** | Searches local files and folders by filename |
+| **Microsoft 365** | Searches Calendar, ToDo, Emails, and OneNote via Microsoft Graph API |
 | **Mock Database** | Demo connector for testing purposes |
 
 ---
@@ -86,6 +88,122 @@ The main window is divided into three areas:
 - **Data Source**: A concrete instance of a connector with specific configuration
 
 Example: The file system connector can create multiple data sources - one for "Documents", one for "Downloads", etc.
+
+---
+
+### Microsoft 365 Connector
+
+The Microsoft 365 Connector allows you to search across your Microsoft 365 data including Calendar events, ToDo tasks, Emails, and OneNote pages using the Microsoft Graph API.
+
+#### Prerequisites
+
+Before using this connector, you need to register an application in Azure Active Directory:
+
+1. **Go to Azure Portal**: Navigate to [https://portal.azure.com](https://portal.azure.com)
+
+2. **Register a new application**:
+   - Go to **Azure Active Directory** ? **App registrations** ? **New registration**
+   - Name: e.g., "MSCC Meta Search"
+   - Supported account types: Choose based on your needs:
+     - **Single tenant**: Only your organization
+     - **Multitenant**: Any Azure AD directory
+     - **Personal Microsoft accounts**: For personal Outlook.com, OneDrive, etc.
+   - Redirect URI: Select **Public client/native** and enter `http://localhost`
+   - Click **Register**
+
+3. **Note the Application (Client) ID**: Copy this value - you'll need it for configuration
+
+4. **Note the Tenant ID** (optional): 
+   - Found on the Overview page
+   - Or use `common` for multi-tenant, `consumers` for personal accounts only
+
+5. **Configure API Permissions**:
+   - Go to **API permissions** ? **Add a permission** ? **Microsoft Graph** ? **Delegated permissions**
+   - Add the following permissions:
+     - `User.Read` (required)
+     - `Calendars.Read` (for calendar search)
+     - `Tasks.Read` (for ToDo search)
+     - `Mail.Read` (for email search)
+     - `Notes.Read` (for OneNote search)
+   - Click **Grant admin consent** if you have admin privileges (optional but recommended)
+
+6. **Enable public client flows** (required for interactive authentication):
+   - Go to **Authentication**
+   - Under **Advanced settings**, set **Allow public client flows** to **Yes**
+   - Click **Save**
+
+#### Configuration
+
+When creating a Microsoft 365 data source in MSCC, configure the following parameters:
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| **Client ID (App-ID)** | Yes | The Application (Client) ID from your Azure app registration |
+| **Tenant ID** | Yes | Your Azure AD Tenant ID, or use special values: `common` (any Azure AD + personal), `consumers` (personal accounts only), `organizations` (any Azure AD only) |
+| **Search Calendar** | No | Include calendar events in search (default: true) |
+| **Search ToDo** | No | Include ToDo tasks in search (default: true) |
+| **Search Mail** | No | Include emails in search (default: true) |
+| **Search OneNote** | No | Include OneNote pages in search (default: true) |
+| **Max Days Back** | No | How many days back to search for calendar/mail (default: 30) |
+
+#### First-Time Authentication
+
+When you first use the connector (either when testing the connection or performing a search):
+
+1. A browser window will open automatically
+2. Sign in with your Microsoft account
+3. Review and accept the requested permissions
+4. The browser will redirect to localhost (you can close it)
+5. MSCC will now have access to search your Microsoft 365 data
+
+**Note**: The authentication token is cached, so you won't need to sign in again unless the token expires or you revoke access.
+
+#### Search Capabilities
+
+| Data Type | What's Searched | Result Details |
+|-----------|-----------------|----------------|
+| **Calendar** | Event subject, body preview, location | Start/end time, location, organizer |
+| **ToDo** | Task title, body content | List name, status, importance, due date |
+| **Email** | Full-text search via Graph API | Sender, received date, attachments, importance |
+| **OneNote** | Page title and content | Section name, created/modified dates |
+
+#### Available Actions
+
+Each search result supports the following actions:
+
+| Action | Description |
+|--------|-------------|
+| **Open in Browser** | Opens the item in the corresponding web app (Outlook, ToDo, OneNote) |
+| **Copy Link** | Copies the web link to the clipboard |
+
+#### Example Usage
+
+1. Click **+** next to "Data Sources"
+2. Select **Microsoft 365** as the connector
+3. Enter a name (e.g., "My Microsoft 365")
+4. Enter your **Client ID** from Azure
+5. Enter your **Tenant ID** (or use `common`)
+6. Enable/disable the services you want to search
+7. Click **Save**
+8. Sign in when prompted
+9. Enable the data source and start searching!
+
+#### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| "AADSTS50011: Reply URL mismatch" | Ensure `http://localhost` is added as a redirect URI in Azure |
+| "AADSTS65001: User needs to consent" | The user hasn't consented to permissions. Re-authenticate or grant admin consent |
+| "AADSTS7000218: Request body must contain client_assertion" | Enable "Allow public client flows" in Azure app settings |
+| No results returned | Check that the specific service (Calendar/ToDo/Mail/OneNote) is enabled in configuration |
+| OneNote search fails | Ensure `Notes.Read` permission is granted; some organizational policies may restrict access |
+
+#### Security Considerations
+
+- The connector uses **delegated permissions**, meaning it can only access data the signed-in user has access to
+- No credentials are stored - authentication is handled via OAuth 2.0 with PKCE
+- Tokens are cached locally and can be revoked from [https://myaccount.microsoft.com](https://myaccount.microsoft.com)
+- For organizational use, consider having an admin grant consent to avoid per-user consent prompts
 
 ---
 
