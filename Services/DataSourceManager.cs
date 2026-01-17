@@ -226,6 +226,7 @@ public class DataSourceManager
         RegisterConnector(new MicrosoftGraphConnector());
         RegisterConnector(new DuckDuckGoConnector());
         RegisterConnector(new SqlDatabaseConnector());
+        RegisterConnector(new OpenAiConnector());
     }
 
     /// <summary>
@@ -286,6 +287,9 @@ public class DataSourceManager
         
         if (template is SqlDatabaseConnector)
             return new SqlDatabaseConnector();
+        
+        if (template is OpenAiConnector)
+            return new OpenAiConnector();
         
         // Gescriptete Konnektoren - versuche neue Instanz über Reflection zu erstellen
         if (template is ScriptedConnectorBase)

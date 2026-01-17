@@ -316,4 +316,33 @@ public class Strings : INotifyPropertyChanged
     public string Connector_SQL_CopyInsert_Desc => GetString("Connector_SQL_CopyInsert_Desc");
     public string Connector_SQL_MatchesIn => GetString("Connector_SQL_MatchesIn");
     public string Connector_SQL_Record => GetString("Connector_SQL_Record");
+
+    // === Connector: OpenAI ===
+    public string OpenAiConnectorName => GetString("OpenAiConnectorName");
+    public string OpenAiConnectorDescription => GetString("OpenAiConnectorDescription");
+    public string OpenAiApiEndpoint => GetString("OpenAiApiEndpoint");
+    public string OpenAiApiEndpointDesc => GetString("OpenAiApiEndpointDesc");
+    public string OpenAiApiKey => GetString("OpenAiApiKey");
+    public string OpenAiApiKeyDesc => GetString("OpenAiApiKeyDesc");
+    public string OpenAiModel => GetString("OpenAiModel");
+    public string OpenAiModelDesc => GetString("OpenAiModelDesc");
+    public string OpenAiSystemPrompt => GetString("OpenAiSystemPrompt");
+    public string OpenAiSystemPromptDesc => GetString("OpenAiSystemPromptDesc");
+    public string OpenAiMaxTokens => GetString("OpenAiMaxTokens");
+    public string OpenAiMaxTokensDesc => GetString("OpenAiMaxTokensDesc");
+    public string OpenAiTemperature => GetString("OpenAiTemperature");
+    public string OpenAiTemperatureDesc => GetString("OpenAiTemperatureDesc");
+    public string OpenAiResponse => GetString("OpenAiResponse");
+    public string OpenAiError => GetString("OpenAiError");
+    public string OpenAiErrorDesc => GetString("OpenAiErrorDesc");
+    public string OpenAiMetaModel => GetString("OpenAiMetaModel");
+    public string OpenAiMetaPromptTokens => GetString("OpenAiMetaPromptTokens");
+    public string OpenAiMetaCompletionTokens => GetString("OpenAiMetaCompletionTokens");
+    public string OpenAiMetaTotalTokens => GetString("OpenAiMetaTotalTokens");
+    public string OpenAiMetaFinishReason => GetString("OpenAiMetaFinishReason");
+    public string OpenAiMetaQuery => GetString("OpenAiMetaQuery");
+    public string OpenAiActionCopyResponse => GetString("OpenAiActionCopyResponse");
+    public string OpenAiActionCopyResponseDesc => GetString("OpenAiActionCopyResponseDesc");
+    public string OpenAiActionCopyQuery => GetString("OpenAiActionCopyQuery");
+    public string OpenAiActionCopyQueryDesc => GetString("OpenAiActionCopyQueryDesc");
 }
