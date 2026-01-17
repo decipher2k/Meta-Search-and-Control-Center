@@ -90,8 +90,19 @@ public class ScriptManagerViewModel : ViewModelBase
         try
         {
             var count = await _repository.LoadAllAsync();
+            
+            // Scripts automatisch kompilieren beim Laden
+            if (count > 0)
+            {
+                var (success, failed) = await _repository.CompileAllAsync();
+                StatusMessage = $"{count} Scripts geladen, {success} kompiliert";
+            }
+            else
+            {
+                StatusMessage = "Keine Scripts gefunden";
+            }
+            
             RefreshScriptsList();
-            StatusMessage = $"{count} Scripts geladen";
         }
         catch (Exception ex)
         {
@@ -115,6 +126,10 @@ public class ScriptManagerViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(NewScriptName)) return;
 
         var script = _repository.Create(NewScriptName);
+        
+        // Script sofort speichern, damit es beim nächsten Start verfügbar ist
+        _repository.Save(script);
+        
         Scripts.Add(script);
         SelectedScript = script;
         StatusMessage = $"Script '{NewScriptName}' erstellt";
@@ -154,6 +169,10 @@ public class ScriptManagerViewModel : ViewModelBase
         if (SelectedScript == null) return;
 
         StatusMessage = $"Kompiliere '{SelectedScript.Metadata.Name}'...";
+        
+        // Script vor dem Kompilieren speichern
+        _repository.Save(SelectedScript);
+        
         var result = await Task.Run(() => _repository.CompileAndRegister(SelectedScript));
 
         StatusMessage = result.Success

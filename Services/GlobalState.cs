@@ -86,6 +86,7 @@ public static class GlobalState
         lock (_lock)
         {
             Connectors[connector.Id] = connector;
+            System.Diagnostics.Debug.WriteLine($"GlobalState.RegisterConnector: Registered '{connector.Id}' ({connector.Name}) - Total: {Connectors.Count}");
         }
     }
 

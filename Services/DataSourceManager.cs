@@ -132,7 +132,13 @@ public class DataSourceManager
     /// </summary>
     public IEnumerable<IDataSourceConnector> GetAvailableConnectors()
     {
-        return GlobalState.Connectors.Values;
+        var connectors = GlobalState.Connectors.Values.ToList();
+        System.Diagnostics.Debug.WriteLine($"DataSourceManager.GetAvailableConnectors: Found {connectors.Count} connectors:");
+        foreach (var c in connectors)
+        {
+            System.Diagnostics.Debug.WriteLine($"  - {c.Id}: {c.Name} ({c.GetType().Name})");
+        }
+        return connectors;
     }
 
     /// <summary>

@@ -20,6 +20,7 @@ namespace MSCC
         private readonly ResultDetailView _detailView;
         private readonly ScriptingService _scriptingService;
         private readonly ScriptRepository _scriptRepository;
+        private bool _isInitialized;
 
         public MainWindow()
         {
@@ -74,21 +75,30 @@ namespace MSCC
                 
                 _viewModel.RefreshDataSources();
                 
-                // Scripts laden
+                // Scripts laden und kompilieren
                 var count = await _scriptRepository.LoadAllAsync();
                 if (count > 0)
                 {
                     var (success, failed) = await _scriptRepository.CompileAllAsync();
-                    _viewModel.RefreshDataSources();
                     
-                    if (success > 0)
+                    // Wichtig: Nach der Kompilierung auf dem UI-Thread aktualisieren
+                    await Dispatcher.InvokeAsync(() =>
                     {
-                        _viewModel.StatusMessage = Strings.Format("ScriptConnectorsLoaded", success);
-                    }
-                    else if (failed > 0)
-                    {
-                        _viewModel.StatusMessage = Strings.Format("CompileFailed", failed);
-                    }
+                        _viewModel.RefreshDataSources();
+                        
+                        if (success > 0)
+                        {
+                            _viewModel.StatusMessage = Strings.Format("ScriptConnectorsLoaded", success);
+                        }
+                        else if (failed > 0)
+                        {
+                            _viewModel.StatusMessage = Strings.Format("CompileFailed", failed);
+                        }
+                        else
+                        {
+                            _viewModel.StatusMessage = Strings.Instance.Ready;
+                        }
+                    });
                 }
                 else
                 {
@@ -102,6 +112,8 @@ namespace MSCC
                         _viewModel.StatusMessage = Strings.Instance.Ready;
                     }
                 }
+                
+                _isInitialized = true;
             }
             catch (Exception ex)
             {
@@ -198,6 +210,9 @@ namespace MSCC
                 Owner = this
             };
             scriptManager.ShowDialog();
+            
+            // Nach dem Schließen des Script Managers die Datenquellen-Liste aktualisieren
+            // damit neue Konnektoren im DataSourceDialog sichtbar sind
             _viewModel.RefreshDataSources();
         }
 

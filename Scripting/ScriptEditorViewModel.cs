@@ -121,6 +121,11 @@ public class ScriptEditorViewModel : ViewModelBase
         try
         {
             CurrentScript.SourceCode = SourceCode;
+            
+            // Script vor dem Kompilieren speichern
+            _repository.Update(CurrentScript);
+            _repository.Save(CurrentScript);
+            
             var result = await Task.Run(() => _repository.CompileAndRegister(CurrentScript));
 
             foreach (var error in result.Errors)
@@ -128,9 +133,15 @@ public class ScriptEditorViewModel : ViewModelBase
             foreach (var warning in result.Warnings)
                 Warnings.Add(warning);
 
-            StatusMessage = result.Success
-                ? Strings.Instance.CompileSuccess
-                : $"{Strings.Instance.CompileFailed} - {result.Errors.Count} {Strings.Instance.Errors}";
+            if (result.Success)
+            {
+                HasUnsavedChanges = false;
+                StatusMessage = Strings.Instance.CompileSuccess;
+            }
+            else
+            {
+                StatusMessage = $"{Strings.Instance.CompileFailed} - {result.Errors.Count} {Strings.Instance.Errors}";
+            }
         }
         catch (Exception ex)
         {

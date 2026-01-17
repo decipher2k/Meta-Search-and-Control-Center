@@ -112,7 +112,10 @@ public class ScriptRepository
         EnsureDirectoryExists();
         var count = 0;
 
-        foreach (var filePath in Directory.GetFiles(_scriptsDirectory, "*.cs"))
+        var files = Directory.GetFiles(_scriptsDirectory, "*.cs");
+        System.Diagnostics.Debug.WriteLine($"ScriptRepository: Found {files.Length} script files in {_scriptsDirectory}");
+
+        foreach (var filePath in files)
         {
             try
             {
@@ -121,11 +124,16 @@ public class ScriptRepository
                 {
                     _loadedScripts[script.Metadata.Id] = script;
                     count++;
+                    System.Diagnostics.Debug.WriteLine($"ScriptRepository: Loaded script '{script.Metadata.Name}' (Id: {script.Metadata.Id}, Enabled: {script.Metadata.IsEnabled})");
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"ScriptRepository: Error loading script from {filePath}: {ex.Message}");
+            }
         }
 
+        System.Diagnostics.Debug.WriteLine($"ScriptRepository: Total {count} scripts loaded");
         return count;
     }
 
@@ -185,15 +193,31 @@ public class ScriptRepository
     {
         int success = 0, failed = 0;
 
-        foreach (var script in _loadedScripts.Values.Where(s => s.Metadata.IsEnabled))
+        var enabledScripts = _loadedScripts.Values.Where(s => s.Metadata.IsEnabled).ToList();
+        System.Diagnostics.Debug.WriteLine($"ScriptRepository: Compiling {enabledScripts.Count} enabled scripts");
+
+        foreach (var script in enabledScripts)
         {
-            await Task.Run(() =>
+            System.Diagnostics.Debug.WriteLine($"ScriptRepository: Compiling '{script.Metadata.Name}'...");
+            
+            // Kompilierung im Thread-Pool ausführen, aber auf das Ergebnis warten
+            var result = await Task.Run(() => CompileAndRegister(script));
+            
+            if (result.Success)
             {
-                var result = CompileAndRegister(script);
-                if (result.Success) success++; else failed++;
-            });
+                success++;
+                System.Diagnostics.Debug.WriteLine($"ScriptRepository: Successfully compiled and registered '{script.Metadata.Name}'");
+            }
+            else
+            {
+                failed++;
+                System.Diagnostics.Debug.WriteLine($"ScriptRepository: Failed to compile '{script.Metadata.Name}': {string.Join(", ", result.Errors.Select(e => e.Message))}");
+            }
         }
 
+        System.Diagnostics.Debug.WriteLine($"ScriptRepository: Compilation complete - {success} success, {failed} failed");
+        System.Diagnostics.Debug.WriteLine($"ScriptRepository: Total connectors in GlobalState: {GlobalState.Connectors.Count}");
+        
         return (success, failed);
     }
 
