@@ -28,6 +28,11 @@ An extensible meta search engine for Windows that can search multiple data sourc
 - **Saved Queries**: Save and load frequently used searches
 - **Extensible**: Add custom connectors via script or as compiled plugins
 
+
+<img width="1919" height="1004" alt="Unbenannt" src="https://github.com/user-attachments/assets/c585fcac-0758-42d8-a606-a16c5c7a57c7" />
+
+
+
 ### Built-in Connectors
 
 | Connector | Description |
