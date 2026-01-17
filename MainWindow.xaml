@@ -174,17 +174,29 @@
                              SelectedItem="{Binding SelectedGroup}"
                              BorderThickness="0"
                              MaxHeight="150">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Padding" Value="0"/>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" 
-                                          Margin="4">
-                                    <StackPanel Orientation="Horizontal">
+                                <Grid Background="Transparent" Margin="4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox Grid.Column="0" 
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay}" 
+                                              VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
                                         <Ellipse Width="12" Height="12" 
                                                  Fill="{Binding Group.Color}" 
                                                  Margin="0,0,8,0"/>
-                                        <TextBlock Text="{Binding Group.Name}"/>
+                                        <TextBlock Text="{Binding Group.Name}" VerticalAlignment="Center"/>
                                     </StackPanel>
-                                </CheckBox>
+                                </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
@@ -228,18 +240,31 @@
                              ItemsSource="{Binding DataSources}"
                              SelectedItem="{Binding SelectedDataSource}"
                              BorderThickness="0">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Padding" Value="0"/>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" 
-                                          Margin="4">
-                                    <StackPanel>
+                                <Grid Background="Transparent" Margin="4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox Grid.Column="0" 
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay}" 
+                                              VerticalAlignment="Top"
+                                              Margin="0,2,0,0"/>
+                                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
                                         <TextBlock Text="{Binding DataSource.Name}" FontWeight="Medium"/>
                                         <TextBlock Text="{Binding DataSource.Description}" 
                                                    FontSize="11" 
                                                    Foreground="Gray"
                                                    TextWrapping="Wrap"/>
                                     </StackPanel>
-                                </CheckBox>
+                                </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>

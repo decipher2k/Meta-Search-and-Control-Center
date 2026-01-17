@@ -293,17 +293,20 @@ public class MainViewModel : ViewModelBase
     {
         if (SelectedDataSource == null) return;
 
+        var dataSourceToDelete = SelectedDataSource;
+        var dataSourceName = dataSourceToDelete.DataSource.Name;
+
         var result = System.Windows.MessageBox.Show(
-            $"Möchten Sie die Datenquelle '{SelectedDataSource.DataSource.Name}' wirklich löschen?",
+            $"Möchten Sie die Datenquelle '{dataSourceName}' wirklich löschen?",
             "Datenquelle löschen",
             System.Windows.MessageBoxButton.YesNo,
             System.Windows.MessageBoxImage.Question);
 
         if (result == System.Windows.MessageBoxResult.Yes)
         {
-            _dataSourceManager.RemoveDataSource(SelectedDataSource.DataSource.Id);
+            _dataSourceManager.RemoveDataSource(dataSourceToDelete.DataSource.Id);
             RefreshDataSources();
-            StatusMessage = $"Datenquelle '{SelectedDataSource.DataSource.Name}' gelöscht";
+            StatusMessage = $"Datenquelle '{dataSourceName}' gelöscht";
         }
     }
 
@@ -324,17 +327,20 @@ public class MainViewModel : ViewModelBase
     {
         if (SelectedGroup == null) return;
 
+        var groupToDelete = SelectedGroup;
+        var groupName = groupToDelete.Group.Name;
+
         var result = System.Windows.MessageBox.Show(
-            $"Möchten Sie die Gruppe '{SelectedGroup.Group.Name}' wirklich löschen?\n\nDatenquellen in dieser Gruppe werden nicht gelöscht, sondern nur aus der Gruppe entfernt.",
+            $"Möchten Sie die Gruppe '{groupName}' wirklich löschen?\n\nDatenquellen in dieser Gruppe werden nicht gelöscht, sondern nur aus der Gruppe entfernt.",
             "Gruppe löschen",
             System.Windows.MessageBoxButton.YesNo,
             System.Windows.MessageBoxImage.Question);
 
         if (result == System.Windows.MessageBoxResult.Yes)
         {
-            _dataSourceManager.RemoveGroup(SelectedGroup.Group.Id, removeDataSources: false);
+            _dataSourceManager.RemoveGroup(groupToDelete.Group.Id, removeDataSources: false);
             RefreshDataSources();
-            StatusMessage = $"Gruppe '{SelectedGroup.Group.Name}' gelöscht";
+            StatusMessage = $"Gruppe '{groupName}' gelöscht";
         }
     }
 
