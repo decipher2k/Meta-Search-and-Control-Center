@@ -1,15 +1,15 @@
-//Meta Search and Control Center (c) 2026 Dennis Michael Heine
+ï»¿// Meta Search and Control Center (c) 2026 Dennis Michael Heine
 namespace MSCC.Localization;
 
 /// <summary>
-/// Italienische Übersetzungen.
+/// Traduzioni italiane.
 /// </summary>
 public static class Strings_it
 {
     public static Dictionary<string, string> Resources { get; } = new()
     {
         // Application
-        ["AppTitle"] = "MSCC - Centro di Comando Meta Ricerca",
+        ["AppTitle"] = "MSCC - Centro Comandi Meta Ricerca",
         ["Ready"] = "Pronto",
         ["Error"] = "Errore",
         ["Warning"] = "Avviso",
@@ -20,7 +20,7 @@ public static class Strings_it
         ["Edit"] = "Modifica",
         ["Add"] = "Aggiungi",
         ["Close"] = "Chiudi",
-        ["Yes"] = "Sì",
+        ["Yes"] = "S\u00ec",
         ["No"] = "No",
         ["OK"] = "OK",
 
@@ -64,7 +64,7 @@ public static class Strings_it
         ["NoGroup"] = "(Nessun Gruppo)",
 
         // Details
-        ["DetailView"] = "Vista Dettagli",
+        ["DetailView"] = "Vista Dettagliata",
         ["SelectResultForDetails"] = "Seleziona un risultato per visualizzare i dettagli.",
         ["Open"] = "Apri",
         ["OpenFolder"] = "Apri Cartella",
@@ -81,7 +81,7 @@ public static class Strings_it
         ["Labels"] = "Etichette",
 
         // Script Editor
-        ["ScriptEditor"] = "Editor Script",
+        ["ScriptEditor"] = "Editor di Script",
         ["ScriptManager"] = "Gestore Script",
         ["NewScript"] = "Nuovo Script",
         ["Compile"] = "Compila",
@@ -98,12 +98,12 @@ public static class Strings_it
         ["Settings"] = "Impostazioni",
         ["Language"] = "Lingua",
         ["SelectLanguage"] = "Seleziona Lingua",
-        ["RestartRequired"] = "Alcune modifiche richiedono un riavvio.",
+        ["RestartRequired"] = "Alcune modifiche richiedono il riavvio.",
         ["General"] = "Generale",
         ["Appearance"] = "Aspetto",
 
         // Validation
-        ["FieldRequired"] = "Il campo '{0}' è obbligatorio.",
+        ["FieldRequired"] = "Il campo '{0}' \u00e8 obbligatorio.",
         ["InvalidValue"] = "Valore non valido",
         ["ValidationError"] = "Errore di Validazione",
 
@@ -123,5 +123,110 @@ public static class Strings_it
         ["ConfirmDelete"] = "Sei sicuro di voler eliminare '{0}'?",
         ["ConfirmDeleteDataSource"] = "Vuoi davvero eliminare l'origine dati '{0}'?",
         ["ConfirmDeleteGroup"] = "Vuoi davvero eliminare il gruppo '{0}'?\n\nLe origini dati in questo gruppo non verranno eliminate.",
+
+        // === Connector: FileSystem ===
+        ["Connector_FileSystem_Name"] = "File System",
+        ["Connector_FileSystem_Description"] = "Cerca file e cartelle nel file system locale.",
+        ["Connector_FileSystem_BasePath"] = "Percorso Base",
+        ["Connector_FileSystem_BasePath_Desc"] = "Il percorso della cartella da cercare.",
+        ["Connector_FileSystem_SearchPattern"] = "Modello di Ricerca",
+        ["Connector_FileSystem_SearchPattern_Desc"] = "Modello di file (es. *.txt, *.pdf)",
+        ["Connector_FileSystem_IncludeSubdirs"] = "Includi Sottocartelle",
+        ["Connector_FileSystem_IncludeSubdirs_Desc"] = "Specifica se cercare nelle sottocartelle.",
+        ["Connector_FileSystem_Open"] = "Apri",
+        ["Connector_FileSystem_Open_Desc"] = "Apri file con programma predefinito",
+        ["Connector_FileSystem_OpenFolder"] = "Apri Cartella",
+        ["Connector_FileSystem_OpenFolder_Desc"] = "Apri cartella contenitore",
+        ["Connector_FileSystem_CopyPath"] = "Copia Percorso",
+        ["Connector_FileSystem_CopyPath_Desc"] = "Copia percorso file negli appunti",
+        ["Connector_FileSystem_Path"] = "Percorso",
+        ["Connector_FileSystem_Size"] = "Dimensione",
+        ["Connector_FileSystem_Created"] = "Creato",
+        ["Connector_FileSystem_Modified"] = "Modificato",
+        ["Connector_FileSystem_Type"] = "Tipo",
+
+        // === Connector: DuckDuckGo ===
+        ["Connector_DuckDuckGo_Name"] = "Ricerca Web DuckDuckGo",
+        ["Connector_DuckDuckGo_Description"] = "Esegue ricerche web tramite DuckDuckGo.",
+        ["Connector_DuckDuckGo_MaxResults"] = "Risultati Massimi",
+        ["Connector_DuckDuckGo_MaxResults_Desc"] = "Numero di risultati di ricerca da restituire (1-30).",
+        ["Connector_DuckDuckGo_Region"] = "Regione",
+        ["Connector_DuckDuckGo_Region_Desc"] = "Impostazione regionale per i risultati (es. 'it-it' per Italia, 'wt-wt' per mondiale).",
+        ["Connector_DuckDuckGo_SafeSearch"] = "Ricerca Sicura",
+        ["Connector_DuckDuckGo_SafeSearch_Desc"] = "Attiva il filtro di ricerca sicura per risultati adatti alle famiglie.",
+        ["Connector_DuckDuckGo_OpenBrowser"] = "Apri nel Browser",
+        ["Connector_DuckDuckGo_OpenBrowser_Desc"] = "Apri pagina web nel browser predefinito",
+        ["Connector_DuckDuckGo_CopyUrl"] = "Copia URL",
+        ["Connector_DuckDuckGo_CopyUrl_Desc"] = "Copia URL negli appunti",
+        ["Connector_DuckDuckGo_SearchMore"] = "Cerca su DuckDuckGo",
+        ["Connector_DuckDuckGo_SearchMore_Desc"] = "Mostra pi\u00f9 risultati su DuckDuckGo",
+        ["Connector_DuckDuckGo_WebResult"] = "Risultato Ricerca Web",
+        ["Connector_DuckDuckGo_Position"] = "Posizione",
+
+        // === Connector: Microsoft 365 ===
+        ["Connector_M365_Name"] = "Microsoft 365",
+        ["Connector_M365_Description"] = "Cerca in Microsoft 365: Calendario, ToDo, Email e OneNote.",
+        ["Connector_M365_ClientId"] = "ID Client (App-ID)",
+        ["Connector_M365_ClientId_Desc"] = "L'ID dell'applicazione (Client) dalla registrazione dell'app Azure.",
+        ["Connector_M365_TenantId"] = "ID Tenant",
+        ["Connector_M365_TenantId_Desc"] = "L'ID del Tenant (o 'common' per multi-tenant, 'consumers' per account personali).",
+        ["Connector_M365_SearchCalendar"] = "Cerca Calendario",
+        ["Connector_M365_SearchCalendar_Desc"] = "Includi eventi del calendario nella ricerca.",
+        ["Connector_M365_SearchToDo"] = "Cerca ToDo",
+        ["Connector_M365_SearchToDo_Desc"] = "Includi attivit\u00e0 Microsoft ToDo nella ricerca.",
+        ["Connector_M365_SearchMail"] = "Cerca Email",
+        ["Connector_M365_SearchMail_Desc"] = "Includi email nella ricerca.",
+        ["Connector_M365_SearchOneNote"] = "Cerca OneNote",
+        ["Connector_M365_SearchOneNote_Desc"] = "Includi pagine OneNote nella ricerca.",
+        ["Connector_M365_MaxDaysBack"] = "Giorni Massimi Indietro",
+        ["Connector_M365_MaxDaysBack_Desc"] = "Quanti giorni indietro cercare eventi del calendario ed email.",
+        ["Connector_M365_OpenOutlook"] = "Apri in Outlook",
+        ["Connector_M365_OpenOutlook_Desc"] = "Apri in Outlook Web",
+        ["Connector_M365_OpenToDo"] = "Apri in ToDo",
+        ["Connector_M365_OpenToDo_Desc"] = "Apri attivit\u00e0 in Microsoft ToDo",
+        ["Connector_M365_OpenOneNote"] = "Apri in OneNote",
+        ["Connector_M365_OpenOneNote_Desc"] = "Apri pagina in OneNote",
+        ["Connector_M365_CopyLink"] = "Copia Link",
+        ["Connector_M365_CopyLink_Desc"] = "Copia link negli appunti",
+        ["Connector_M365_OpenBrowser"] = "Apri nel Browser",
+        ["Connector_M365_OpenBrowser_Desc"] = "Apri nel browser predefinito",
+        ["Connector_M365_CalendarEntry"] = "Voce Calendario",
+        ["Connector_M365_Task"] = "Attivit\u00e0",
+        ["Connector_M365_Email"] = "Email",
+        ["Connector_M365_OneNotePage"] = "Pagina OneNote",
+        ["Connector_M365_Subject"] = "Oggetto",
+        ["Connector_M365_Start"] = "Inizio",
+        ["Connector_M365_End"] = "Fine",
+        ["Connector_M365_Location"] = "Luogo",
+        ["Connector_M365_Organizer"] = "Organizzatore",
+        ["Connector_M365_List"] = "Lista",
+        ["Connector_M365_Status"] = "Stato",
+        ["Connector_M365_Priority"] = "Priorit\u00e0",
+        ["Connector_M365_DueDate"] = "Data di Scadenza",
+        ["Connector_M365_Notes"] = "Note",
+        ["Connector_M365_From"] = "Da",
+        ["Connector_M365_Received"] = "Ricevuto",
+        ["Connector_M365_Attachments"] = "Allegati",
+        ["Connector_M365_Preview"] = "Anteprima",
+        ["Connector_M365_Title"] = "Titolo",
+        ["Connector_M365_Section"] = "Sezione",
+
+        // === Connector: SQL Database ===
+        ["Connector_SQL_Name"] = "Database SQL",
+        ["Connector_SQL_Description"] = "Cerca nei database SQL (MySQL, MSSQL, PostgreSQL).",
+        ["Connector_SQL_ConnectionString"] = "Stringa di Connessione",
+        ["Connector_SQL_ConnectionString_Desc"] = "Stringa di connessione al database (es. 'Server=localhost;Database=mydb;User Id=user;Password=pass;')",
+        ["Connector_SQL_DatabaseType"] = "Tipo di Database",
+        ["Connector_SQL_DatabaseType_Desc"] = "Tipo di database: MSSQL, MySQL o PostgreSQL",
+        ["Connector_SQL_Tables"] = "Tabelle",
+        ["Connector_SQL_Tables_Desc"] = "Lista di tabelle separate da virgole, o '*' per tutte. Ignorato se viene fornita una query personalizzata.",
+        ["Connector_SQL_CustomQuery"] = "Query SQL Personalizzata",
+        ["Connector_SQL_CustomQuery_Desc"] = "Opzionale: Istruzione SELECT personalizzata. Usa @SearchTerm come segnaposto per il termine di ricerca.",
+        ["Connector_SQL_CopyJson"] = "Copia come JSON",
+        ["Connector_SQL_CopyJson_Desc"] = "Copia record come JSON negli appunti",
+        ["Connector_SQL_CopyInsert"] = "Copia come INSERT",
+        ["Connector_SQL_CopyInsert_Desc"] = "Copia come istruzione SQL INSERT",
+        ["Connector_SQL_MatchesIn"] = "Corrispondenze in",
+        ["Connector_SQL_Record"] = "Record",
     };
 }

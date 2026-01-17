@@ -1,4 +1,4 @@
-//Meta Search and Control Center (c) 2026 Dennis Michael Heine
+// Meta Search and Control Center (c) 2026 Dennis Michael Heine
 using System.Diagnostics;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -6,6 +6,7 @@ using System.Web;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using MSCC.Localization;
 using MSCC.Models;
 
 namespace MSCC.Connectors;
@@ -18,13 +19,14 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
 {
     private HttpClient? _httpClient;
     private int _maxResults = 10;
-    private string _region = "wt-wt"; // Worldwide
+    private string _region = "wt-wt";
     private bool _safeSearch = true;
     private bool _isInitialized;
+    private static Strings L => Strings.Instance;
 
     public string Id => "duckduckgo-connector";
-    public string Name => "DuckDuckGo Web Search";
-    public string Description => "Performs web searches via DuckDuckGo.";
+    public string Name => L.Connector_DuckDuckGo_Name;
+    public string Description => L.Connector_DuckDuckGo_Description;
     public string Version => "1.0.0";
 
     public IEnumerable<ConnectorParameter> ConfigurationParameters =>
@@ -32,8 +34,8 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
         new ConnectorParameter
         {
             Name = "MaxResults",
-            DisplayName = "Max Results",
-            Description = "Number of search results to return (1-30).",
+            DisplayName = L.Connector_DuckDuckGo_MaxResults,
+            Description = L.Connector_DuckDuckGo_MaxResults_Desc,
             ParameterType = "int",
             IsRequired = false,
             DefaultValue = "10"
@@ -41,8 +43,8 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
         new ConnectorParameter
         {
             Name = "Region",
-            DisplayName = "Region",
-            Description = "Region setting for search results (e.g. 'de-de' for Germany, 'wt-wt' for worldwide).",
+            DisplayName = L.Connector_DuckDuckGo_Region,
+            Description = L.Connector_DuckDuckGo_Region_Desc,
             ParameterType = "string",
             IsRequired = false,
             DefaultValue = "wt-wt"
@@ -50,8 +52,8 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
         new ConnectorParameter
         {
             Name = "SafeSearch",
-            DisplayName = "SafeSearch",
-            Description = "Enables SafeSearch filter for family-friendly results.",
+            DisplayName = L.Connector_DuckDuckGo_SafeSearch,
+            Description = L.Connector_DuckDuckGo_SafeSearch_Desc,
             ParameterType = "bool",
             IsRequired = false,
             DefaultValue = "true"
@@ -62,7 +64,6 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
     {
         try
         {
-            // Read MaxResults
             if (configuration.TryGetValue("MaxResults", out var maxResultsStr))
             {
                 if (int.TryParse(maxResultsStr, out var maxResults))
@@ -71,19 +72,16 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
                 }
             }
 
-            // Read Region
             if (configuration.TryGetValue("Region", out var region) && !string.IsNullOrEmpty(region))
             {
                 _region = region;
             }
 
-            // Read SafeSearch
             if (configuration.TryGetValue("SafeSearch", out var safeSearch))
             {
                 _safeSearch = !bool.TryParse(safeSearch, out var ss) || ss;
             }
 
-            // Create HttpClient
             _httpClient = new HttpClient();
             _httpClient.DefaultRequestHeaders.Add("User-Agent", 
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
@@ -119,14 +117,12 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
             return results;
         }
 
-        // Use configured maximum, but not more than requested
         var resultLimit = Math.Min(_maxResults, maxResults);
 
         Debug.WriteLine($"[DuckDuckGoConnector] Searching for '{searchTerm}' (max {resultLimit} results)");
 
         try
         {
-            // DuckDuckGo HTML-Lite version for easy parsing
             var safeSearchParam = _safeSearch ? "1" : "-1";
             var url = $"https://html.duckduckgo.com/html/?q={Uri.EscapeDataString(searchTerm)}&kl={_region}&kp={safeSearchParam}";
 
@@ -139,8 +135,6 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
             }
 
             var html = await response.Content.ReadAsStringAsync(cancellationToken);
-            
-            // Parse search results from HTML
             results = ParseSearchResults(html, resultLimit);
 
             Debug.WriteLine($"[DuckDuckGoConnector] Found {results.Count} results");
@@ -167,8 +161,6 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
 
         try
         {
-            // Regex for DuckDuckGo HTML-Lite results
-            // Each result is in a <div class="result"> container
             var resultPattern = ResultBlockRegex();
             var resultMatches = resultPattern.Matches(html);
 
@@ -178,8 +170,6 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
                     break;
 
                 var resultHtml = resultMatch.Value;
-
-                // Extract URL and title
                 var linkPattern = ResultLinkRegex();
                 var linkMatch = linkPattern.Match(resultHtml);
 
@@ -188,18 +178,14 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
 
                 var url = HttpUtility.HtmlDecode(linkMatch.Groups[1].Value);
                 var title = StripHtml(HttpUtility.HtmlDecode(linkMatch.Groups[2].Value));
-
-                // DuckDuckGo uses redirect URLs, extract actual URL
                 var actualUrl = ExtractActualUrl(url);
 
-                // Extract description
                 var snippetPattern = SnippetRegex();
                 var snippetMatch = snippetPattern.Match(resultHtml);
                 var description = snippetMatch.Success 
                     ? StripHtml(HttpUtility.HtmlDecode(snippetMatch.Groups[1].Value))
                     : "";
 
-                // Extract domain
                 var domain = "";
                 try
                 {
@@ -221,7 +207,7 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
                     SourceName = "DuckDuckGo",
                     ConnectorId = Id,
                     OriginalReference = actualUrl,
-                    RelevanceScore = 100 - (results.Count * 3), // Higher position = higher score
+                    RelevanceScore = 100 - (results.Count * 3),
                     Metadata = new Dictionary<string, object>
                     {
                         ["Type"] = "WebSearch",
@@ -243,7 +229,6 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
 
     private static string ExtractActualUrl(string ddgUrl)
     {
-        // DuckDuckGo uses URLs like: //duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com
         if (ddgUrl.Contains("uddg="))
         {
             var uddgMatch = Regex.Match(ddgUrl, @"uddg=([^&]+)");
@@ -253,7 +238,6 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
             }
         }
 
-        // If no redirect, return URL directly
         if (ddgUrl.StartsWith("//"))
             return "https:" + ddgUrl;
 
@@ -265,9 +249,7 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
         if (string.IsNullOrEmpty(html))
             return "";
 
-        // Remove HTML tags
         var text = Regex.Replace(html, "<[^>]*>", " ");
-        // Consolidate multiple spaces
         text = Regex.Replace(text, @"\s+", " ");
         return text.Trim();
     }
@@ -287,40 +269,37 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
         };
     }
 
-    private static List<ResultAction> GetWebSearchActions() =>
+    private List<ResultAction> GetWebSearchActions() =>
     [
-        new() { Id = "open-browser", Name = "Open in Browser", Icon = "[Web]", Description = "Open webpage in default browser" },
-        new() { Id = "copy-url", Name = "Copy URL", Icon = "[Copy]", Description = "Copy URL to clipboard" },
-        new() { Id = "search-more", Name = "Search on DuckDuckGo", Icon = "[Search]", Description = "Show more results on DuckDuckGo" }
+        new() { Id = "open-browser", Name = L.Connector_DuckDuckGo_OpenBrowser, Icon = "[Web]", Description = L.Connector_DuckDuckGo_OpenBrowser_Desc },
+        new() { Id = "copy-url", Name = L.Connector_DuckDuckGo_CopyUrl, Icon = "[Copy]", Description = L.Connector_DuckDuckGo_CopyUrl_Desc },
+        new() { Id = "search-more", Name = L.Connector_DuckDuckGo_SearchMore, Icon = "[Search]", Description = L.Connector_DuckDuckGo_SearchMore_Desc }
     ];
 
     public FrameworkElement? CreateCustomDetailView(SearchResult result)
     {
         var stackPanel = new StackPanel { Margin = new Thickness(8) };
 
-        // Header
         var header = new TextBlock
         {
-            Text = "Web Search Result",
+            Text = L.Connector_DuckDuckGo_WebResult,
             FontSize = 16,
             FontWeight = FontWeights.Bold,
             Margin = new Thickness(0, 0, 0, 12)
         };
         stackPanel.Children.Add(header);
 
-        // Title
         var titleBlock = new TextBlock
         {
             Text = result.Title,
             FontSize = 14,
             FontWeight = FontWeights.SemiBold,
             TextWrapping = TextWrapping.Wrap,
-            Foreground = new SolidColorBrush(Color.FromRgb(26, 13, 171)), // DuckDuckGo Blue
+            Foreground = new SolidColorBrush(Color.FromRgb(26, 13, 171)),
             Margin = new Thickness(0, 0, 0, 4)
         };
         stackPanel.Children.Add(titleBlock);
 
-        // URL
         var url = result.Metadata.GetValueOrDefault("Url")?.ToString() ?? result.OriginalReference;
         var domain = result.Metadata.GetValueOrDefault("Domain")?.ToString() ?? "";
         
@@ -328,12 +307,11 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
         {
             Text = domain,
             FontSize = 12,
-            Foreground = new SolidColorBrush(Color.FromRgb(32, 128, 64)), // Green like search engines
+            Foreground = new SolidColorBrush(Color.FromRgb(32, 128, 64)),
             Margin = new Thickness(0, 0, 0, 8)
         };
         stackPanel.Children.Add(urlBlock);
 
-        // Description
         if (!string.IsNullOrEmpty(result.Description))
         {
             var descBlock = new TextBlock
@@ -347,14 +325,12 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
             stackPanel.Children.Add(descBlock);
         }
 
-        // Full URL
         AddDetailRow(stackPanel, "URL", url);
         
-        // Position
         var position = result.Metadata.GetValueOrDefault("Position")?.ToString() ?? "";
         if (!string.IsNullOrEmpty(position))
         {
-            AddDetailRow(stackPanel, "Position", $"#{position}");
+            AddDetailRow(stackPanel, L.Connector_DuckDuckGo_Position, $"#{position}");
         }
 
         return stackPanel;
@@ -420,7 +396,6 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
                         break;
 
                     case "search-more":
-                        // Opens DuckDuckGo search results page
                         var searchUrl = $"https://duckduckgo.com/?q={Uri.EscapeDataString(result.Title)}";
                         Process.Start(new ProcessStartInfo(searchUrl) { UseShellExecute = true });
                         return true;
@@ -444,7 +419,6 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    // Generated Regex for better performance
     [GeneratedRegex(@"<div[^>]*class=""[^""]*result[^""]*""[^>]*>.*?</div>\s*</div>", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
     private static partial Regex ResultBlockRegex();
 

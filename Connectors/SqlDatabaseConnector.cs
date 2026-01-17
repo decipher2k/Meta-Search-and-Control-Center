@@ -7,6 +7,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using MSCC.Localization;
 using MSCC.Models;
 
 namespace MSCC.Connectors;
@@ -24,10 +25,11 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
     private bool _useCustomQuery;
     private bool _isInitialized;
     private DbConnection? _connection;
+    private static Strings L => Strings.Instance;
 
     public string Id => "sql-database-connector";
-    public string Name => "SQL Database";
-    public string Description => "Searches SQL databases (MySQL, MSSQL, PostgreSQL).";
+    public string Name => L.Connector_SQL_Name;
+    public string Description => L.Connector_SQL_Description;
     public string Version => "1.0.0";
 
     public IEnumerable<ConnectorParameter> ConfigurationParameters =>
@@ -35,16 +37,16 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         new ConnectorParameter
         {
             Name = "ConnectionString",
-            DisplayName = "Connection String",
-            Description = "Database connection string (e.g., 'Server=localhost;Database=mydb;User Id=user;Password=pass;')",
+            DisplayName = L.Connector_SQL_ConnectionString,
+            Description = L.Connector_SQL_ConnectionString_Desc,
             ParameterType = "string",
             IsRequired = true
         },
         new ConnectorParameter
         {
             Name = "DatabaseType",
-            DisplayName = "Database Type",
-            Description = "Type of database: MSSQL, MySQL, or PostgreSQL",
+            DisplayName = L.Connector_SQL_DatabaseType,
+            Description = L.Connector_SQL_DatabaseType_Desc,
             ParameterType = "string",
             IsRequired = true,
             DefaultValue = "MSSQL"
@@ -52,8 +54,8 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         new ConnectorParameter
         {
             Name = "Tables",
-            DisplayName = "Tables",
-            Description = "Comma-separated list of tables to search, or '*' for all tables. Ignored if custom query is provided.",
+            DisplayName = L.Connector_SQL_Tables,
+            Description = L.Connector_SQL_Tables_Desc,
             ParameterType = "string",
             IsRequired = false,
             DefaultValue = "*"
@@ -61,8 +63,8 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         new ConnectorParameter
         {
             Name = "CustomQuery",
-            DisplayName = "Custom SQL Query",
-            Description = "Optional: Custom SELECT statement. Use @SearchTerm as placeholder for the search term.",
+            DisplayName = L.Connector_SQL_CustomQuery,
+            Description = L.Connector_SQL_CustomQuery_Desc,
             ParameterType = "string",
             IsRequired = false
         }
@@ -72,7 +74,6 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
     {
         try
         {
-            // Connection String
             if (!configuration.TryGetValue("ConnectionString", out var connectionString) || 
                 string.IsNullOrEmpty(connectionString))
             {
@@ -81,7 +82,6 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
             }
             _connectionString = connectionString;
 
-            // Database Type
             if (configuration.TryGetValue("DatabaseType", out var dbType))
             {
                 _databaseType = dbType.ToUpperInvariant() switch
@@ -92,17 +92,8 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
                 };
             }
 
-            // Tables
-            if (configuration.TryGetValue("Tables", out var tables))
-            {
-                _tables = tables;
-            }
-            else
-            {
-                _tables = "*";
-            }
+            _tables = configuration.TryGetValue("Tables", out var tables) ? tables : "*";
 
-            // Custom Query
             if (configuration.TryGetValue("CustomQuery", out var customQuery) && 
                 !string.IsNullOrWhiteSpace(customQuery))
             {
@@ -128,9 +119,7 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         var results = new List<SearchResult>();
 
         if (!_isInitialized || string.IsNullOrWhiteSpace(searchTerm))
-        {
             return results;
-        }
 
         Debug.WriteLine($"[SqlDatabaseConnector] Searching for '{searchTerm}' in {_databaseType}");
 
@@ -141,20 +130,15 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
 
             if (_useCustomQuery)
             {
-                // Execute custom query
                 results = await ExecuteCustomQueryAsync(connection, searchTerm, maxResults, cancellationToken);
             }
             else
             {
-                // Search in specified tables
                 var tablesToSearch = await GetTablesToSearchAsync(connection, cancellationToken);
                 
                 foreach (var table in tablesToSearch)
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                        break;
-
-                    if (results.Count >= maxResults)
+                    if (cancellationToken.IsCancellationRequested || results.Count >= maxResults)
                         break;
 
                     var tableResults = await SearchTableAsync(
@@ -187,7 +171,6 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
 
     private DbConnection CreateSqlServerConnection()
     {
-        // Use Microsoft.Data.SqlClient via reflection to avoid hard dependency
         var assemblyName = "Microsoft.Data.SqlClient";
         var typeName = "Microsoft.Data.SqlClient.SqlConnection";
         
@@ -203,7 +186,6 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         }
         catch
         {
-            // Fallback to System.Data.SqlClient
             var fallbackType = Type.GetType("System.Data.SqlClient.SqlConnection, System.Data.SqlClient");
             if (fallbackType != null)
             {
@@ -212,54 +194,46 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
             }
         }
         
-        throw new InvalidOperationException(
-            "SQL Server provider not found. Please install Microsoft.Data.SqlClient NuGet package.");
+        throw new InvalidOperationException("SQL Server provider not found. Please install Microsoft.Data.SqlClient NuGet package.");
     }
 
     private DbConnection CreateMySqlConnection()
     {
-        var assemblyName = "MySql.Data";
-        var typeName = "MySql.Data.MySqlClient.MySqlConnection";
-        
+        // Try MySqlConnector first (recommended)
         try
         {
-            var assembly = System.Reflection.Assembly.Load(assemblyName);
-            var type = assembly.GetType(typeName);
+            var assembly = System.Reflection.Assembly.Load("MySqlConnector");
+            var type = assembly.GetType("MySqlConnector.MySqlConnection");
             if (type != null)
             {
                 var connection = Activator.CreateInstance(type, _connectionString) as DbConnection;
                 return connection ?? throw new InvalidOperationException("Failed to create MySQL connection");
             }
         }
-        catch
+        catch { }
+
+        // Try MySql.Data as fallback
+        try
         {
-            // Try MySqlConnector as alternative
-            try
+            var assembly = System.Reflection.Assembly.Load("MySql.Data");
+            var type = assembly.GetType("MySql.Data.MySqlClient.MySqlConnection");
+            if (type != null)
             {
-                var altAssembly = System.Reflection.Assembly.Load("MySqlConnector");
-                var altType = altAssembly.GetType("MySqlConnector.MySqlConnection");
-                if (altType != null)
-                {
-                    var connection = Activator.CreateInstance(altType, _connectionString) as DbConnection;
-                    return connection ?? throw new InvalidOperationException("Failed to create MySQL connection");
-                }
+                var connection = Activator.CreateInstance(type, _connectionString) as DbConnection;
+                return connection ?? throw new InvalidOperationException("Failed to create MySQL connection");
             }
-            catch { }
         }
+        catch { }
         
-        throw new InvalidOperationException(
-            "MySQL provider not found. Please install MySql.Data or MySqlConnector NuGet package.");
+        throw new InvalidOperationException("MySQL provider not found. Please install MySqlConnector NuGet package.");
     }
 
     private DbConnection CreateNpgsqlConnection()
     {
-        var assemblyName = "Npgsql";
-        var typeName = "Npgsql.NpgsqlConnection";
-        
         try
         {
-            var assembly = System.Reflection.Assembly.Load(assemblyName);
-            var type = assembly.GetType(typeName);
+            var assembly = System.Reflection.Assembly.Load("Npgsql");
+            var type = assembly.GetType("Npgsql.NpgsqlConnection");
             if (type != null)
             {
                 var connection = Activator.CreateInstance(type, _connectionString) as DbConnection;
@@ -268,25 +242,19 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         }
         catch { }
         
-        throw new InvalidOperationException(
-            "PostgreSQL provider not found. Please install Npgsql NuGet package.");
+        throw new InvalidOperationException("PostgreSQL provider not found. Please install Npgsql NuGet package.");
     }
 
-    private async Task<List<string>> GetTablesToSearchAsync(
-        DbConnection connection, 
-        CancellationToken cancellationToken)
+    private async Task<List<string>> GetTablesToSearchAsync(DbConnection connection, CancellationToken ct)
     {
         var tables = new List<string>();
 
         if (_tables != "*" && !string.IsNullOrWhiteSpace(_tables))
         {
-            // Use specified tables
-            tables.AddRange(_tables.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(t => t.Trim()));
+            tables.AddRange(_tables.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()));
             return tables;
         }
 
-        // Get all tables from database
         var query = _databaseType switch
         {
             DatabaseType.MySQL => "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE'",
@@ -297,8 +265,8 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         using var command = connection.CreateCommand();
         command.CommandText = query;
 
-        using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
+        using var reader = await command.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
         {
             tables.Add(reader.GetString(0));
         }
@@ -307,53 +275,38 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
     }
 
     private async Task<List<SearchResult>> SearchTableAsync(
-        DbConnection connection,
-        string tableName,
-        string searchTerm,
-        int maxResults,
-        CancellationToken cancellationToken)
+        DbConnection connection, string tableName, string searchTerm, int maxResults, CancellationToken ct)
     {
         var results = new List<SearchResult>();
 
         try
         {
-            // Get column names for the table
-            var columns = await GetTableColumnsAsync(connection, tableName, cancellationToken);
-            
-            if (columns.Count == 0)
-                return results;
+            var columns = await GetTableColumnsAsync(connection, tableName, ct);
+            if (columns.Count == 0) return results;
 
-            // Build search query with LIKE for each column
             var whereClause = BuildSearchWhereClause(columns, searchTerm);
             var quotedTableName = QuoteIdentifier(tableName);
             
-            var query = $"SELECT * FROM {quotedTableName} WHERE {whereClause}";
-            
-            // Add LIMIT/TOP based on database type
-            query = _databaseType switch
+            var query = _databaseType switch
             {
                 DatabaseType.MSSQL => $"SELECT TOP {maxResults} * FROM {quotedTableName} WHERE {whereClause}",
-                _ => $"{query} LIMIT {maxResults}"
+                _ => $"SELECT * FROM {quotedTableName} WHERE {whereClause} LIMIT {maxResults}"
             };
 
             using var command = connection.CreateCommand();
             command.CommandText = query;
             
-            // Add parameter for search term
             var param = command.CreateParameter();
             param.ParameterName = "@SearchTerm";
             param.Value = $"%{searchTerm}%";
             command.Parameters.Add(param);
 
-            using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            using var reader = await command.ExecuteReaderAsync(ct);
             
-            while (await reader.ReadAsync(cancellationToken))
+            while (await reader.ReadAsync(ct))
             {
-                if (results.Count >= maxResults)
-                    break;
-
-                var result = CreateSearchResultFromRow(reader, tableName, searchTerm, columns);
-                results.Add(result);
+                if (results.Count >= maxResults) break;
+                results.Add(CreateSearchResultFromRow(reader, tableName, searchTerm, columns));
             }
         }
         catch (Exception ex)
@@ -364,24 +317,15 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         return results;
     }
 
-    private async Task<List<ColumnInfo>> GetTableColumnsAsync(
-        DbConnection connection,
-        string tableName,
-        CancellationToken cancellationToken)
+    private async Task<List<ColumnInfo>> GetTableColumnsAsync(DbConnection connection, string tableName, CancellationToken ct)
     {
         var columns = new List<ColumnInfo>();
 
         var query = _databaseType switch
         {
-            DatabaseType.MySQL => @"SELECT COLUMN_NAME, DATA_TYPE 
-                                    FROM INFORMATION_SCHEMA.COLUMNS 
-                                    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = @TableName",
-            DatabaseType.PostgreSQL => @"SELECT column_name, data_type 
-                                         FROM information_schema.columns 
-                                         WHERE table_schema = 'public' AND table_name = @TableName",
-            _ => @"SELECT COLUMN_NAME, DATA_TYPE 
-                   FROM INFORMATION_SCHEMA.COLUMNS 
-                   WHERE TABLE_NAME = @TableName"
+            DatabaseType.MySQL => "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = @TableName",
+            DatabaseType.PostgreSQL => "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = @TableName",
+            _ => "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName"
         };
 
         using var command = connection.CreateCommand();
@@ -392,14 +336,10 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         param.Value = tableName;
         command.Parameters.Add(param);
 
-        using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
+        using var reader = await command.ExecuteReaderAsync(ct);
+        while (await reader.ReadAsync(ct))
         {
-            columns.Add(new ColumnInfo
-            {
-                Name = reader.GetString(0),
-                DataType = reader.GetString(1)
-            });
+            columns.Add(new ColumnInfo { Name = reader.GetString(0), DataType = reader.GetString(1) });
         }
 
         return columns;
@@ -411,7 +351,6 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         
         foreach (var column in columns)
         {
-            // Only search in text-like columns
             if (IsSearchableColumn(column.DataType))
             {
                 var quotedColumn = QuoteIdentifier(column.Name);
@@ -426,16 +365,12 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
 
         if (conditions.Count == 0)
         {
-            // Fallback: search first column
             if (columns.Count > 0)
             {
                 var quotedColumn = QuoteIdentifier(columns[0].Name);
                 conditions.Add($"CAST({quotedColumn} AS NVARCHAR(MAX)) LIKE @SearchTerm");
             }
-            else
-            {
-                return "1=0"; // No columns to search
-            }
+            else return "1=0";
         }
 
         return string.Join(" OR ", conditions);
@@ -443,39 +378,23 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
 
     private static bool IsSearchableColumn(string dataType)
     {
-        var searchableTypes = new[]
-        {
-            "varchar", "nvarchar", "char", "nchar", "text", "ntext",
-            "character varying", "character", // PostgreSQL
-            "longtext", "mediumtext", "tinytext", // MySQL
-            "xml", "json"
-        };
-
-        return searchableTypes.Any(t => 
-            dataType.StartsWith(t, StringComparison.OrdinalIgnoreCase));
+        var searchableTypes = new[] { "varchar", "nvarchar", "char", "nchar", "text", "ntext",
+            "character varying", "character", "longtext", "mediumtext", "tinytext", "xml", "json" };
+        return searchableTypes.Any(t => dataType.StartsWith(t, StringComparison.OrdinalIgnoreCase));
     }
 
-    private string QuoteIdentifier(string identifier)
+    private string QuoteIdentifier(string identifier) => _databaseType switch
     {
-        return _databaseType switch
-        {
-            DatabaseType.MySQL => $"`{identifier}`",
-            DatabaseType.PostgreSQL => $"\"{identifier}\"",
-            _ => $"[{identifier}]"
-        };
-    }
+        DatabaseType.MySQL => $"`{identifier}`",
+        DatabaseType.PostgreSQL => $"\"{identifier}\"",
+        _ => $"[{identifier}]"
+    };
 
-    private SearchResult CreateSearchResultFromRow(
-        DbDataReader reader, 
-        string tableName, 
-        string searchTerm,
-        List<ColumnInfo> columns)
+    private SearchResult CreateSearchResultFromRow(DbDataReader reader, string tableName, string searchTerm, List<ColumnInfo> columns)
     {
         var metadata = new Dictionary<string, object>
         {
-            ["Type"] = "SqlRecord",
-            ["TableName"] = tableName,
-            ["DatabaseType"] = _databaseType.ToString()
+            ["Type"] = "SqlRecord", ["TableName"] = tableName, ["DatabaseType"] = _databaseType.ToString()
         };
 
         var matchingColumns = new List<string>();
@@ -486,32 +405,20 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         {
             var columnName = reader.GetName(i);
             var value = reader.IsDBNull(i) ? null : reader.GetValue(i);
-            
             metadata[columnName] = value ?? DBNull.Value;
 
             if (value != null)
             {
                 var stringValue = value.ToString() ?? "";
-                
-                // Check if this column contains the search term
                 if (stringValue.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
-                {
                     matchingColumns.Add(columnName);
-                }
 
-                // Use first non-null string column as title
                 if (string.IsNullOrEmpty(title) && !string.IsNullOrWhiteSpace(stringValue))
-                {
-                    title = stringValue.Length > 100 
-                        ? stringValue[..100] + "..." 
-                        : stringValue;
-                }
+                    title = stringValue.Length > 100 ? stringValue[..100] + "..." : stringValue;
 
-                // Build description from first few columns
                 if (description.Length < 200)
                 {
-                    if (description.Length > 0)
-                        description.Append(" | ");
+                    if (description.Length > 0) description.Append(" | ");
                     description.Append($"{columnName}: {(stringValue.Length > 50 ? stringValue[..50] + "..." : stringValue)}");
                 }
             }
@@ -521,7 +428,7 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
 
         return new SearchResult
         {
-            Title = string.IsNullOrEmpty(title) ? $"[{tableName}] Record" : title,
+            Title = string.IsNullOrEmpty(title) ? $"[{tableName}] {L.Connector_SQL_Record}" : title,
             Description = description.ToString(),
             SourceName = $"SQL - {tableName}",
             ConnectorId = Id,
@@ -531,19 +438,13 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         };
     }
 
-    private async Task<List<SearchResult>> ExecuteCustomQueryAsync(
-        DbConnection connection,
-        string searchTerm,
-        int maxResults,
-        CancellationToken cancellationToken)
+    private async Task<List<SearchResult>> ExecuteCustomQueryAsync(DbConnection connection, string searchTerm, int maxResults, CancellationToken ct)
     {
         var results = new List<SearchResult>();
 
         try
         {
             using var command = connection.CreateCommand();
-            
-            // Replace @SearchTerm placeholder
             command.CommandText = _customQuery.Replace("@SearchTerm", "@SearchTermParam");
             
             var param = command.CreateParameter();
@@ -551,31 +452,21 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
             param.Value = searchTerm;
             command.Parameters.Add(param);
 
-            // Also add wildcards version
             var wildcardParam = command.CreateParameter();
             wildcardParam.ParameterName = "@SearchTermWildcard";
             wildcardParam.Value = $"%{searchTerm}%";
             command.Parameters.Add(wildcardParam);
 
-            using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            using var reader = await command.ExecuteReaderAsync(ct);
             
             var columns = new List<ColumnInfo>();
             for (int i = 0; i < reader.FieldCount; i++)
-            {
-                columns.Add(new ColumnInfo 
-                { 
-                    Name = reader.GetName(i), 
-                    DataType = reader.GetDataTypeName(i) 
-                });
-            }
+                columns.Add(new ColumnInfo { Name = reader.GetName(i), DataType = reader.GetDataTypeName(i) });
 
-            while (await reader.ReadAsync(cancellationToken))
+            while (await reader.ReadAsync(ct))
             {
-                if (results.Count >= maxResults)
-                    break;
-
-                var result = CreateSearchResultFromRow(reader, "CustomQuery", searchTerm, columns);
-                results.Add(result);
+                if (results.Count >= maxResults) break;
+                results.Add(CreateSearchResultFromRow(reader, "CustomQuery", searchTerm, columns));
             }
         }
         catch (Exception ex)
@@ -588,9 +479,7 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
 
     public async Task<bool> TestConnectionAsync()
     {
-        if (!_isInitialized)
-            return false;
-
+        if (!_isInitialized) return false;
         try
         {
             using var connection = CreateConnection();
@@ -614,17 +503,16 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         };
     }
 
-    private static List<ResultAction> GetSqlActions() =>
+    private List<ResultAction> GetSqlActions() =>
     [
-        new() { Id = "copy-json", Name = "Copy as JSON", Icon = "[JSON]", Description = "Copy record as JSON to clipboard" },
-        new() { Id = "copy-insert", Name = "Copy as INSERT", Icon = "[SQL]", Description = "Copy as SQL INSERT statement" }
+        new() { Id = "copy-json", Name = L.Connector_SQL_CopyJson, Icon = "[JSON]", Description = L.Connector_SQL_CopyJson_Desc },
+        new() { Id = "copy-insert", Name = L.Connector_SQL_CopyInsert, Icon = "[SQL]", Description = L.Connector_SQL_CopyInsert_Desc }
     ];
 
     public FrameworkElement? CreateCustomDetailView(SearchResult result)
     {
         var stackPanel = new StackPanel { Margin = new Thickness(8) };
 
-        // Header
         var tableName = result.Metadata.GetValueOrDefault("TableName")?.ToString() ?? "Unknown";
         var dbType = result.Metadata.GetValueOrDefault("DatabaseType")?.ToString() ?? "";
         
@@ -638,13 +526,12 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         };
         stackPanel.Children.Add(header);
 
-        // Matching columns info
         var matchingCols = result.Metadata.GetValueOrDefault("MatchingColumns")?.ToString();
         if (!string.IsNullOrEmpty(matchingCols))
         {
             var matchBlock = new TextBlock
             {
-                Text = $"Matches in: {matchingCols}",
+                Text = $"{L.Connector_SQL_MatchesIn}: {matchingCols}",
                 FontSize = 12,
                 FontStyle = FontStyles.Italic,
                 Foreground = new SolidColorBrush(Color.FromRgb(39, 174, 96)),
@@ -653,7 +540,6 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
             stackPanel.Children.Add(matchBlock);
         }
 
-        // Create data grid for record fields
         var grid = new Grid { Margin = new Thickness(0, 8, 0, 0) };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -663,12 +549,10 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
 
         foreach (var kvp in result.Metadata)
         {
-            if (excludeKeys.Contains(kvp.Key))
-                continue;
+            if (excludeKeys.Contains(kvp.Key)) continue;
 
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-            // Column name
             var nameBlock = new TextBlock
             {
                 Text = kvp.Key,
@@ -681,10 +565,8 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
             Grid.SetColumn(nameBlock, 0);
             grid.Children.Add(nameBlock);
 
-            // Value
             var valueText = kvp.Value?.ToString() ?? "(NULL)";
-            if (valueText.Length > 200)
-                valueText = valueText[..200] + "...";
+            if (valueText.Length > 200) valueText = valueText[..200] + "...";
 
             var valueBlock = new TextBlock
             {
@@ -703,7 +585,6 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
             rowIndex++;
         }
 
-        // Wrap grid in ScrollViewer for long records
         var scrollViewer = new ScrollViewer
         {
             Content = grid,
@@ -712,7 +593,6 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         };
 
         stackPanel.Children.Add(scrollViewer);
-
         return stackPanel;
     }
 
@@ -762,16 +642,6 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private enum DatabaseType
-    {
-        MSSQL,
-        MySQL,
-        PostgreSQL
-    }
-
-    private class ColumnInfo
-    {
-        public string Name { get; set; } = string.Empty;
-        public string DataType { get; set; } = string.Empty;
-    }
+    private enum DatabaseType { MSSQL, MySQL, PostgreSQL }
+    private class ColumnInfo { public string Name { get; set; } = string.Empty; public string DataType { get; set; } = string.Empty; }
 }

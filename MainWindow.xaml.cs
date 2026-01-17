@@ -65,6 +65,13 @@ namespace MSCC
                 
                 // Gespeicherte Datenquellen laden
                 await _viewModel.DataSourceManager.LoadSavedDataSourcesAsync();
+                
+                // Wenn keine Datenquellen vorhanden sind, Beispiel-Daten erstellen
+                if (GlobalState.DataSources.Count == 0 && GlobalState.Groups.Count == 0)
+                {
+                    await CreateDefaultDataSourcesAsync();
+                }
+                
                 _viewModel.RefreshDataSources();
                 
                 // Scripts laden
@@ -99,6 +106,42 @@ namespace MSCC
             catch (Exception ex)
             {
                 _viewModel.StatusMessage = $"{Strings.Instance.Error}: {ex.Message}";
+            }
+        }
+
+        private async Task CreateDefaultDataSourcesAsync()
+        {
+            try
+            {
+                // Erstelle Beispiel-Gruppen
+                var documentsGroup = _viewModel.DataSourceManager.CreateGroup("Dokumente", "Alle Dokumenten-Datenquellen", "#3498db");
+                var databaseGroup = _viewModel.DataSourceManager.CreateGroup("Datenbanken", "Alle Datenbank-Datenquellen", "#e74c3c");
+
+                // Erstelle Beispiel-Datenquellen
+                await _viewModel.DataSourceManager.CreateDataSourceAsync(
+                    "Eigene Dateien",
+                    "filesystem-connector",
+                    new Dictionary<string, string>
+                    {
+                        ["BasePath"] = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                        ["SearchPattern"] = "*.*",
+                        ["IncludeSubdirectories"] = "true"
+                    },
+                    documentsGroup.Id);
+
+                await _viewModel.DataSourceManager.CreateDataSourceAsync(
+                    "Mock Datenbank",
+                    "mock-database-connector",
+                    new Dictionary<string, string>
+                    {
+                        ["ConnectionString"] = "Server=localhost;Database=Test",
+                        ["TableName"] = "Documents"
+                    },
+                    databaseGroup.Id);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error creating default data sources: {ex.Message}");
             }
         }
 

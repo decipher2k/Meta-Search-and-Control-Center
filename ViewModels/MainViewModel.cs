@@ -266,56 +266,8 @@ public class MainViewModel : ViewModelBase
 
     private void InitializeDefaultDataSources()
     {
+        // Nur Konnektoren registrieren - Daten werden in MainWindow.InitializeAsync geladen
         _dataSourceManager.RegisterDefaultConnectors();
-
-        // Erstelle Beispiel-Gruppen
-        var documentsGroup = _dataSourceManager.CreateGroup("Dokumente", "Alle Dokumenten-Datenquellen", "#3498db");
-        var databaseGroup = _dataSourceManager.CreateGroup("Datenbanken", "Alle Datenbank-Datenquellen", "#e74c3c");
-
-        // Erstelle Datenquellen synchron im Hintergrund und aktualisiere dann UI
-        Task.Run(async () =>
-        {
-            try
-            {
-                var fileDs = await _dataSourceManager.CreateDataSourceAsync(
-                    "Eigene Dateien",
-                    "filesystem-connector",
-                    new Dictionary<string, string>
-                    {
-                        ["BasePath"] = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                        ["SearchPattern"] = "*.*",
-                        ["IncludeSubdirectories"] = "true"
-                    },
-                    documentsGroup.Id);
-
-                var dbDs = await _dataSourceManager.CreateDataSourceAsync(
-                    "Mock Datenbank",
-                    "mock-database-connector",
-                    new Dictionary<string, string>
-                    {
-                        ["ConnectionString"] = "Server=localhost;Database=Test",
-                        ["TableName"] = "Documents"
-                    },
-                    databaseGroup.Id);
-
-                // Aktualisiere UI auf dem UI-Thread
-                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
-                {
-                    RefreshDataSources();
-                    var count = DataSources.Count;
-                    StatusMessage = $"Bereit - {count} Datenquellen geladen";
-                });
-            }
-            catch (Exception ex)
-            {
-                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
-                {
-                    StatusMessage = $"Fehler beim Laden der Datenquellen: {ex.Message}";
-                });
-            }
-        });
-
-        RefreshDataSources();
     }
 
     // Events for dialog handling (to be subscribed by View)

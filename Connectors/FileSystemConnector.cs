@@ -1,41 +1,43 @@
-//Meta Search and Control Center (c) 2026 Dennis Michael Heine
+// Meta Search and Control Center (c) 2026 Dennis Michael Heine
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using MSCC.Localization;
 using MSCC.Models;
 
 namespace MSCC.Connectors;
 
 /// <summary>
-/// Dateisystem-Konnektor zum Durchsuchen von Dateien.
+/// File system connector for searching files.
 /// </summary>
 public class FileSystemConnector : IDataSourceConnector, IDisposable
 {
     private string _basePath = string.Empty;
     private string _searchPattern = "*.*";
     private bool _includeSubdirectories = true;
+    private static Strings L => Strings.Instance;
 
     public string Id => "filesystem-connector";
-    public string Name => "Dateisystem";
-    public string Description => "Durchsucht Dateien und Ordner im lokalen Dateisystem.";
+    public string Name => L.Connector_FileSystem_Name;
+    public string Description => L.Connector_FileSystem_Description;
     public string Version => "1.0.0";
 
-    public IEnumerable<ConnectorParameter> ConfigurationParameters => new[]
-    {
+    public IEnumerable<ConnectorParameter> ConfigurationParameters =>
+    [
         new ConnectorParameter
         {
             Name = "BasePath",
-            DisplayName = "Basispfad",
-            Description = "Der Ordnerpfad, der durchsucht werden soll.",
+            DisplayName = L.Connector_FileSystem_BasePath,
+            Description = L.Connector_FileSystem_BasePath_Desc,
             ParameterType = "path",
             IsRequired = true
         },
         new ConnectorParameter
         {
             Name = "SearchPattern",
-            DisplayName = "Suchmuster",
-            Description = "Dateimuster (z.B. *.txt, *.pdf)",
+            DisplayName = L.Connector_FileSystem_SearchPattern,
+            Description = L.Connector_FileSystem_SearchPattern_Desc,
             ParameterType = "string",
             IsRequired = false,
             DefaultValue = "*.*"
@@ -43,13 +45,13 @@ public class FileSystemConnector : IDataSourceConnector, IDisposable
         new ConnectorParameter
         {
             Name = "IncludeSubdirectories",
-            DisplayName = "Unterordner einschließen",
-            Description = "Gibt an, ob Unterordner durchsucht werden sollen.",
+            DisplayName = L.Connector_FileSystem_IncludeSubdirs,
+            Description = L.Connector_FileSystem_IncludeSubdirs_Desc,
             ParameterType = "bool",
             IsRequired = false,
             DefaultValue = "true"
         }
-    };
+    ];
 
     public Task<bool> InitializeAsync(Dictionary<string, string> configuration)
     {
@@ -82,32 +84,28 @@ public class FileSystemConnector : IDataSourceConnector, IDisposable
 
         if (string.IsNullOrEmpty(_basePath))
         {
-            System.Diagnostics.Debug.WriteLine($"[FileSystemConnector] BasePath is empty");
+            Debug.WriteLine($"[FileSystemConnector] BasePath is empty");
             return results;
         }
 
         if (!Directory.Exists(_basePath))
         {
-            System.Diagnostics.Debug.WriteLine($"[FileSystemConnector] BasePath does not exist: {_basePath}");
+            Debug.WriteLine($"[FileSystemConnector] BasePath does not exist: {_basePath}");
             return results;
         }
 
         if (string.IsNullOrWhiteSpace(searchTerm))
         {
-            System.Diagnostics.Debug.WriteLine($"[FileSystemConnector] SearchTerm is empty");
+            Debug.WriteLine($"[FileSystemConnector] SearchTerm is empty");
             return results;
         }
 
-        System.Diagnostics.Debug.WriteLine($"[FileSystemConnector] Searching for '{searchTerm}' in '{_basePath}' with pattern '{_searchPattern}'");
+        Debug.WriteLine($"[FileSystemConnector] Searching for '{searchTerm}' in '{_basePath}' with pattern '{_searchPattern}'");
 
         await Task.Run(() =>
         {
             try
             {
-                var searchOption = _includeSubdirectories
-                    ? SearchOption.AllDirectories
-                    : SearchOption.TopDirectoryOnly;
-
                 var files = Directory.EnumerateFiles(_basePath, _searchPattern, new EnumerationOptions
                 {
                     IgnoreInaccessible = true,
@@ -126,15 +124,15 @@ public class FileSystemConnector : IDataSourceConnector, IDisposable
                     filesScanned++;
                     var fileName = Path.GetFileName(file);
                     
-                    // Suche im Dateinamen
+                    // Search in filename
                     if (fileName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
                     {
                         var fileInfo = new FileInfo(file);
                         results.Add(new SearchResult
                         {
                             Title = fileName,
-                            Description = $"Pfad: {file}",
-                            SourceName = "Dateisystem",
+                            Description = $"{L.Connector_FileSystem_Path}: {file}",
+                            SourceName = L.Connector_FileSystem_Name,
                             ConnectorId = Id,
                             OriginalReference = file,
                             RelevanceScore = 100,
@@ -149,19 +147,19 @@ public class FileSystemConnector : IDataSourceConnector, IDisposable
                     }
                 }
 
-                System.Diagnostics.Debug.WriteLine($"[FileSystemConnector] Scanned {filesScanned} files, found {results.Count} matches");
+                Debug.WriteLine($"[FileSystemConnector] Scanned {filesScanned} files, found {results.Count} matches");
             }
             catch (UnauthorizedAccessException ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[FileSystemConnector] Access denied: {ex.Message}");
+                Debug.WriteLine($"[FileSystemConnector] Access denied: {ex.Message}");
             }
             catch (DirectoryNotFoundException ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[FileSystemConnector] Directory not found: {ex.Message}");
+                Debug.WriteLine($"[FileSystemConnector] Directory not found: {ex.Message}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[FileSystemConnector] Error: {ex.Message}");
+                Debug.WriteLine($"[FileSystemConnector] Error: {ex.Message}");
             }
         }, cancellationToken);
 
@@ -176,7 +174,6 @@ public class FileSystemConnector : IDataSourceConnector, IDisposable
 
     public void Dispose()
     {
-        // Keine Ressourcen freizugeben
         GC.SuppressFinalize(this);
     }
 
@@ -184,41 +181,41 @@ public class FileSystemConnector : IDataSourceConnector, IDisposable
     {
         var extension = result.Metadata.GetValueOrDefault("Extension")?.ToString()?.ToLowerInvariant() ?? "";
         
-        // Medien-Dateien
+        // Media files
         if (IsImageFile(extension))
         {
             return new DetailViewConfiguration
             {
                 ViewType = DetailViewType.Media,
                 MediaPathProperty = "OriginalReference",
-                DisplayProperties = new List<string> { "Size", "Created", "Modified" },
+                DisplayProperties = ["Size", "Created", "Modified"],
                 Actions = GetFileActions()
             };
         }
         
-        // Standard: Tabellen-Ansicht mit Datei-Eigenschaften
+        // Default: Table view with file properties
         return new DetailViewConfiguration
         {
             ViewType = DetailViewType.Table,
-            TableColumns = new List<TableColumnDefinition>
-            {
-                new() { PropertyName = "Extension", Header = "Typ", Width = "60" },
-                new() { PropertyName = "Size", Header = "Größe", Width = "100", Format = "{0:N0} Bytes" },
-                new() { PropertyName = "Created", Header = "Erstellt", Width = "150", Format = "{0:g}" },
-                new() { PropertyName = "Modified", Header = "Geändert", Width = "150", Format = "{0:g}" }
-            },
+            TableColumns =
+            [
+                new() { PropertyName = "Extension", Header = L.Connector_FileSystem_Type, Width = "60" },
+                new() { PropertyName = "Size", Header = L.Connector_FileSystem_Size, Width = "100", Format = "{0:N0} Bytes" },
+                new() { PropertyName = "Created", Header = L.Connector_FileSystem_Created, Width = "150", Format = "{0:g}" },
+                new() { PropertyName = "Modified", Header = L.Connector_FileSystem_Modified, Width = "150", Format = "{0:g}" }
+            ],
             Actions = GetFileActions()
         };
     }
 
-    private static List<ResultAction> GetFileActions()
+    private List<ResultAction> GetFileActions()
     {
-        return new List<ResultAction>
-        {
-            new() { Id = "open", Name = "Öffnen", Icon = "??", Description = "Datei mit Standardprogramm öffnen" },
-            new() { Id = "open-folder", Name = "Ordner öffnen", Icon = "??", Description = "Übergeordneten Ordner öffnen" },
-            new() { Id = "copy-path", Name = "Pfad kopieren", Icon = "??", Description = "Dateipfad in Zwischenablage kopieren" }
-        };
+        return
+        [
+            new() { Id = "open", Name = L.Connector_FileSystem_Open, Icon = "[File]", Description = L.Connector_FileSystem_Open_Desc },
+            new() { Id = "open-folder", Name = L.Connector_FileSystem_OpenFolder, Icon = "[Folder]", Description = L.Connector_FileSystem_OpenFolder_Desc },
+            new() { Id = "copy-path", Name = L.Connector_FileSystem_CopyPath, Icon = "[Copy]", Description = L.Connector_FileSystem_CopyPath_Desc }
+        ];
     }
 
     private static bool IsImageFile(string extension)
@@ -287,9 +284,9 @@ public class FileSystemConnector : IDataSourceConnector, IDisposable
                         break;
                         
                     case "copy-path":
-                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        Application.Current.Dispatcher.Invoke(() =>
                         {
-                            System.Windows.Clipboard.SetText(result.OriginalReference);
+                            Clipboard.SetText(result.OriginalReference);
                         });
                         return true;
                 }

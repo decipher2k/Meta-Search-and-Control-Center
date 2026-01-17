@@ -5,7 +5,7 @@ using System.Globalization;
 namespace MSCC.Localization;
 
 /// <summary>
-/// Unterstützte Sprachen.
+/// Supported languages.
 /// </summary>
 public class LanguageInfo
 {
@@ -15,8 +15,8 @@ public class LanguageInfo
 }
 
 /// <summary>
-/// Stellt lokalisierte Strings für die Anwendung bereit.
-/// Unterstützt Sprachwechsel zur Laufzeit.
+/// Provides localized strings for the application.
+/// Supports runtime language switching.
 /// </summary>
 public class Strings : INotifyPropertyChanged
 {
@@ -29,19 +29,19 @@ public class Strings : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     /// <summary>
-    /// Liste aller unterstützten Sprachen.
+    /// List of all supported languages.
     /// </summary>
     public static List<LanguageInfo> SupportedLanguages { get; } = new()
     {
         new() { Code = "en", NativeName = "English", EnglishName = "English" },
         new() { Code = "de", NativeName = "Deutsch", EnglishName = "German" },
-        new() { Code = "es", NativeName = "Español", EnglishName = "Spanish" },
-        new() { Code = "fr", NativeName = "Français", EnglishName = "French" },
+        new() { Code = "es", NativeName = "Espa\u00f1ol", EnglishName = "Spanish" },
+        new() { Code = "fr", NativeName = "Fran\u00e7ais", EnglishName = "French" },
         new() { Code = "it", NativeName = "Italiano", EnglishName = "Italian" },
-        new() { Code = "hi", NativeName = "??????", EnglishName = "Hindi" },
-        new() { Code = "ja", NativeName = "???", EnglishName = "Japanese" },
-        new() { Code = "zh", NativeName = "??", EnglishName = "Chinese" },
-        new() { Code = "ru", NativeName = "???????", EnglishName = "Russian" },
+        new() { Code = "hi", NativeName = "\u0939\u093f\u0928\u094d\u0926\u0940", EnglishName = "Hindi" },
+        new() { Code = "ja", NativeName = "\u65e5\u672c\u8a9e", EnglishName = "Japanese" },
+        new() { Code = "zh", NativeName = "\u4e2d\u6587", EnglishName = "Chinese" },
+        new() { Code = "ru", NativeName = "\u0420\u0443\u0441\u0441\u043a\u0438\u0439", EnglishName = "Russian" },
     };
 
     static Strings()
@@ -50,7 +50,7 @@ public class Strings : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Wechselt die Sprache zur Laufzeit.
+    /// Switches the language at runtime.
     /// </summary>
     public static void SetLanguage(string languageCode)
     {
@@ -69,11 +69,11 @@ public class Strings : INotifyPropertyChanged
         };
 
         CultureInfo.CurrentUICulture = new CultureInfo(languageCode);
-        _instance.OnPropertyChanged(string.Empty); // Alle Properties aktualisieren
+        _instance.OnPropertyChanged(string.Empty);
     }
 
     /// <summary>
-    /// Gibt den aktuellen Sprachcode zurück.
+    /// Returns the current language code.
     /// </summary>
     public static string CurrentLanguage => _currentLanguage;
 
@@ -83,7 +83,7 @@ public class Strings : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Gibt einen formatierten String zurück.
+    /// Returns a formatted string.
     /// </summary>
     public static string Format(string key, params object[] args)
     {
@@ -96,7 +96,7 @@ public class Strings : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    // === Anwendung ===
+    // === Application ===
     public string AppTitle => GetString("AppTitle");
     public string Ready => GetString("Ready");
     public string Error => GetString("Error");
@@ -112,7 +112,7 @@ public class Strings : INotifyPropertyChanged
     public string No => GetString("No");
     public string OK => GetString("OK");
 
-    // === Menü ===
+    // === Menu ===
     public string MenuFile => GetString("MenuFile");
     public string MenuExit => GetString("MenuExit");
     public string MenuPlugins => GetString("MenuPlugins");
@@ -122,7 +122,7 @@ public class Strings : INotifyPropertyChanged
     public string MenuHelp => GetString("MenuHelp");
     public string MenuAbout => GetString("MenuAbout");
 
-    // === Suche ===
+    // === Search ===
     public string Search => GetString("Search");
     public string SearchResults => GetString("SearchResults");
     public string Searching => GetString("Searching");
@@ -131,7 +131,7 @@ public class Strings : INotifyPropertyChanged
     public string ResultsFound => GetString("ResultsFound");
     public string Source => GetString("Source");
 
-    // === Datenquellen ===
+    // === DataSources ===
     public string DataSources => GetString("DataSources");
     public string NewDataSource => GetString("NewDataSource");
     public string EditDataSource => GetString("EditDataSource");
@@ -142,7 +142,7 @@ public class Strings : INotifyPropertyChanged
     public string Enabled => GetString("Enabled");
     public string NoDataSourcesSelected => GetString("NoDataSourcesSelected");
 
-    // === Gruppen ===
+    // === Groups ===
     public string Groups => GetString("Groups");
     public string NewGroup => GetString("NewGroup");
     public string EditGroup => GetString("EditGroup");
@@ -182,7 +182,7 @@ public class Strings : INotifyPropertyChanged
     public string CompileSuccess => GetString("CompileSuccess");
     public string CompileFailed => GetString("CompileFailed");
 
-    // === Einstellungen ===
+    // === Settings ===
     public string Settings => GetString("Settings");
     public string Language => GetString("Language");
     public string SelectLanguage => GetString("SelectLanguage");
@@ -190,7 +190,7 @@ public class Strings : INotifyPropertyChanged
     public string General => GetString("General");
     public string Appearance => GetString("Appearance");
 
-    // === Validierung ===
+    // === Validation ===
     public string FieldRequired => GetString("FieldRequired");
     public string InvalidValue => GetString("InvalidValue");
     public string ValidationError => GetString("ValidationError");
@@ -207,8 +207,113 @@ public class Strings : INotifyPropertyChanged
     public string GroupUpdated => GetString("GroupUpdated");
     public string GroupDeleted => GetString("GroupDeleted");
 
-    // === Bestätigungsdialoge ===
+    // === Confirmation dialogs ===
     public string ConfirmDelete => GetString("ConfirmDelete");
     public string ConfirmDeleteDataSource => GetString("ConfirmDeleteDataSource");
     public string ConfirmDeleteGroup => GetString("ConfirmDeleteGroup");
+
+    // === Connector: FileSystem ===
+    public string Connector_FileSystem_Name => GetString("Connector_FileSystem_Name");
+    public string Connector_FileSystem_Description => GetString("Connector_FileSystem_Description");
+    public string Connector_FileSystem_BasePath => GetString("Connector_FileSystem_BasePath");
+    public string Connector_FileSystem_BasePath_Desc => GetString("Connector_FileSystem_BasePath_Desc");
+    public string Connector_FileSystem_SearchPattern => GetString("Connector_FileSystem_SearchPattern");
+    public string Connector_FileSystem_SearchPattern_Desc => GetString("Connector_FileSystem_SearchPattern_Desc");
+    public string Connector_FileSystem_IncludeSubdirs => GetString("Connector_FileSystem_IncludeSubdirs");
+    public string Connector_FileSystem_IncludeSubdirs_Desc => GetString("Connector_FileSystem_IncludeSubdirs_Desc");
+    public string Connector_FileSystem_Open => GetString("Connector_FileSystem_Open");
+    public string Connector_FileSystem_Open_Desc => GetString("Connector_FileSystem_Open_Desc");
+    public string Connector_FileSystem_OpenFolder => GetString("Connector_FileSystem_OpenFolder");
+    public string Connector_FileSystem_OpenFolder_Desc => GetString("Connector_FileSystem_OpenFolder_Desc");
+    public string Connector_FileSystem_CopyPath => GetString("Connector_FileSystem_CopyPath");
+    public string Connector_FileSystem_CopyPath_Desc => GetString("Connector_FileSystem_CopyPath_Desc");
+    public string Connector_FileSystem_Path => GetString("Connector_FileSystem_Path");
+    public string Connector_FileSystem_Size => GetString("Connector_FileSystem_Size");
+    public string Connector_FileSystem_Created => GetString("Connector_FileSystem_Created");
+    public string Connector_FileSystem_Modified => GetString("Connector_FileSystem_Modified");
+    public string Connector_FileSystem_Type => GetString("Connector_FileSystem_Type");
+
+    // === Connector: DuckDuckGo ===
+    public string Connector_DuckDuckGo_Name => GetString("Connector_DuckDuckGo_Name");
+    public string Connector_DuckDuckGo_Description => GetString("Connector_DuckDuckGo_Description");
+    public string Connector_DuckDuckGo_MaxResults => GetString("Connector_DuckDuckGo_MaxResults");
+    public string Connector_DuckDuckGo_MaxResults_Desc => GetString("Connector_DuckDuckGo_MaxResults_Desc");
+    public string Connector_DuckDuckGo_Region => GetString("Connector_DuckDuckGo_Region");
+    public string Connector_DuckDuckGo_Region_Desc => GetString("Connector_DuckDuckGo_Region_Desc");
+    public string Connector_DuckDuckGo_SafeSearch => GetString("Connector_DuckDuckGo_SafeSearch");
+    public string Connector_DuckDuckGo_SafeSearch_Desc => GetString("Connector_DuckDuckGo_SafeSearch_Desc");
+    public string Connector_DuckDuckGo_OpenBrowser => GetString("Connector_DuckDuckGo_OpenBrowser");
+    public string Connector_DuckDuckGo_OpenBrowser_Desc => GetString("Connector_DuckDuckGo_OpenBrowser_Desc");
+    public string Connector_DuckDuckGo_CopyUrl => GetString("Connector_DuckDuckGo_CopyUrl");
+    public string Connector_DuckDuckGo_CopyUrl_Desc => GetString("Connector_DuckDuckGo_CopyUrl_Desc");
+    public string Connector_DuckDuckGo_SearchMore => GetString("Connector_DuckDuckGo_SearchMore");
+    public string Connector_DuckDuckGo_SearchMore_Desc => GetString("Connector_DuckDuckGo_SearchMore_Desc");
+    public string Connector_DuckDuckGo_WebResult => GetString("Connector_DuckDuckGo_WebResult");
+    public string Connector_DuckDuckGo_Position => GetString("Connector_DuckDuckGo_Position");
+
+    // === Connector: Microsoft 365 ===
+    public string Connector_M365_Name => GetString("Connector_M365_Name");
+    public string Connector_M365_Description => GetString("Connector_M365_Description");
+    public string Connector_M365_ClientId => GetString("Connector_M365_ClientId");
+    public string Connector_M365_ClientId_Desc => GetString("Connector_M365_ClientId_Desc");
+    public string Connector_M365_TenantId => GetString("Connector_M365_TenantId");
+    public string Connector_M365_TenantId_Desc => GetString("Connector_M365_TenantId_Desc");
+    public string Connector_M365_SearchCalendar => GetString("Connector_M365_SearchCalendar");
+    public string Connector_M365_SearchCalendar_Desc => GetString("Connector_M365_SearchCalendar_Desc");
+    public string Connector_M365_SearchToDo => GetString("Connector_M365_SearchToDo");
+    public string Connector_M365_SearchToDo_Desc => GetString("Connector_M365_SearchToDo_Desc");
+    public string Connector_M365_SearchMail => GetString("Connector_M365_SearchMail");
+    public string Connector_M365_SearchMail_Desc => GetString("Connector_M365_SearchMail_Desc");
+    public string Connector_M365_SearchOneNote => GetString("Connector_M365_SearchOneNote");
+    public string Connector_M365_SearchOneNote_Desc => GetString("Connector_M365_SearchOneNote_Desc");
+    public string Connector_M365_MaxDaysBack => GetString("Connector_M365_MaxDaysBack");
+    public string Connector_M365_MaxDaysBack_Desc => GetString("Connector_M365_MaxDaysBack_Desc");
+    public string Connector_M365_OpenOutlook => GetString("Connector_M365_OpenOutlook");
+    public string Connector_M365_OpenOutlook_Desc => GetString("Connector_M365_OpenOutlook_Desc");
+    public string Connector_M365_OpenToDo => GetString("Connector_M365_OpenToDo");
+    public string Connector_M365_OpenToDo_Desc => GetString("Connector_M365_OpenToDo_Desc");
+    public string Connector_M365_OpenOneNote => GetString("Connector_M365_OpenOneNote");
+    public string Connector_M365_OpenOneNote_Desc => GetString("Connector_M365_OpenOneNote_Desc");
+    public string Connector_M365_CopyLink => GetString("Connector_M365_CopyLink");
+    public string Connector_M365_CopyLink_Desc => GetString("Connector_M365_CopyLink_Desc");
+    public string Connector_M365_OpenBrowser => GetString("Connector_M365_OpenBrowser");
+    public string Connector_M365_OpenBrowser_Desc => GetString("Connector_M365_OpenBrowser_Desc");
+    public string Connector_M365_CalendarEntry => GetString("Connector_M365_CalendarEntry");
+    public string Connector_M365_Task => GetString("Connector_M365_Task");
+    public string Connector_M365_Email => GetString("Connector_M365_Email");
+    public string Connector_M365_OneNotePage => GetString("Connector_M365_OneNotePage");
+    public string Connector_M365_Subject => GetString("Connector_M365_Subject");
+    public string Connector_M365_Start => GetString("Connector_M365_Start");
+    public string Connector_M365_End => GetString("Connector_M365_End");
+    public string Connector_M365_Location => GetString("Connector_M365_Location");
+    public string Connector_M365_Organizer => GetString("Connector_M365_Organizer");
+    public string Connector_M365_List => GetString("Connector_M365_List");
+    public string Connector_M365_Status => GetString("Connector_M365_Status");
+    public string Connector_M365_Priority => GetString("Connector_M365_Priority");
+    public string Connector_M365_DueDate => GetString("Connector_M365_DueDate");
+    public string Connector_M365_Notes => GetString("Connector_M365_Notes");
+    public string Connector_M365_From => GetString("Connector_M365_From");
+    public string Connector_M365_Received => GetString("Connector_M365_Received");
+    public string Connector_M365_Attachments => GetString("Connector_M365_Attachments");
+    public string Connector_M365_Preview => GetString("Connector_M365_Preview");
+    public string Connector_M365_Title => GetString("Connector_M365_Title");
+    public string Connector_M365_Section => GetString("Connector_M365_Section");
+
+    // === Connector: SQL Database ===
+    public string Connector_SQL_Name => GetString("Connector_SQL_Name");
+    public string Connector_SQL_Description => GetString("Connector_SQL_Description");
+    public string Connector_SQL_ConnectionString => GetString("Connector_SQL_ConnectionString");
+    public string Connector_SQL_ConnectionString_Desc => GetString("Connector_SQL_ConnectionString_Desc");
+    public string Connector_SQL_DatabaseType => GetString("Connector_SQL_DatabaseType");
+    public string Connector_SQL_DatabaseType_Desc => GetString("Connector_SQL_DatabaseType_Desc");
+    public string Connector_SQL_Tables => GetString("Connector_SQL_Tables");
+    public string Connector_SQL_Tables_Desc => GetString("Connector_SQL_Tables_Desc");
+    public string Connector_SQL_CustomQuery => GetString("Connector_SQL_CustomQuery");
+    public string Connector_SQL_CustomQuery_Desc => GetString("Connector_SQL_CustomQuery_Desc");
+    public string Connector_SQL_CopyJson => GetString("Connector_SQL_CopyJson");
+    public string Connector_SQL_CopyJson_Desc => GetString("Connector_SQL_CopyJson_Desc");
+    public string Connector_SQL_CopyInsert => GetString("Connector_SQL_CopyInsert");
+    public string Connector_SQL_CopyInsert_Desc => GetString("Connector_SQL_CopyInsert_Desc");
+    public string Connector_SQL_MatchesIn => GetString("Connector_SQL_MatchesIn");
+    public string Connector_SQL_Record => GetString("Connector_SQL_Record");
 }
