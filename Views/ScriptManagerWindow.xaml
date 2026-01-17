@@ -59,10 +59,12 @@
                     <Button Command="{Binding RefreshCommand}"
                             Padding="12,8"
                             Margin="0,0,8,0"
-                            Content="?"/>
+                            Content="&#x21BB;"
+                            FontSize="16"
+                            ToolTip="Refresh"/>
                     <Button Command="{Binding OpenFolderCommand}"
                             Padding="12,8"
-                            Content="??"
+                            Content="&#x1F4C1;"
                             ToolTip="Open Folder"/>
                 </StackPanel>
             </Grid>

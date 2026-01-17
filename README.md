@@ -9,6 +9,7 @@ An extensible meta search engine for Windows that can search multiple data sourc
 - [User Interface](#user-interface)
 - [Connectors and Data Sources](#connectors-and-data-sources)
   - [Microsoft 365 Connector](#microsoft-365-connector)
+  - [SQL Database Connector](#sql-database-connector)
 - [Plugin Development](#plugin-development)
   - [Option 1: Script-based Plugins](#option-1-script-based-plugins)
   - [Option 2: Compiled Plugins (Visual Studio)](#option-2-compiled-plugins-visual-studio)
@@ -33,6 +34,8 @@ An extensible meta search engine for Windows that can search multiple data sourc
 |-----------|-------------|
 | **File System** | Searches local files and folders by filename |
 | **Microsoft 365** | Searches Calendar, ToDo, Emails, and OneNote via Microsoft Graph API |
+| **DuckDuckGo** | Performs web searches using DuckDuckGo |
+| **SQL Database** | Searches SQL databases (MySQL, MSSQL, PostgreSQL) |
 | **Mock Database** | Demo connector for testing purposes |
 
 ---
@@ -204,6 +207,217 @@ Each search result supports the following actions:
 - No credentials are stored - authentication is handled via OAuth 2.0 with PKCE
 - Tokens are cached locally and can be revoked from [https://myaccount.microsoft.com](https://myaccount.microsoft.com)
 - For organizational use, consider having an admin grant consent to avoid per-user consent prompts
+
+---
+
+### SQL Database Connector
+
+The SQL Database Connector allows you to search across relational databases including Microsoft SQL Server, MySQL, and PostgreSQL. It can search all text fields in specified tables or execute custom SQL queries.
+
+#### Supported Databases
+
+| Database | Required Package |
+|----------|------------------|
+| **Microsoft SQL Server** | `Microsoft.Data.SqlClient` or `System.Data.SqlClient` |
+| **MySQL** | `MySql.Data` or `MySqlConnector` |
+| **PostgreSQL** | `Npgsql` |
+
+> **Note**: Install the appropriate NuGet package for your database before using this connector.
+
+#### Configuration
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| **Connection String** | Yes | - | Database connection string |
+| **Database Type** | Yes | MSSQL | Type: `MSSQL`, `MySQL`, or `PostgreSQL` |
+| **Tables** | No | * | Comma-separated table names, or `*` for all tables |
+| **Custom SQL Query** | No | - | Custom SELECT statement with `@SearchTerm` placeholder |
+
+#### Connection String Examples
+
+**SQL Server:**
+```
+Server=localhost;Database=MyDB;User Id=sa;Password=secret;TrustServerCertificate=True;
+```
+
+**MySQL:**
+```
+Server=localhost;Database=MyDB;User=root;Password=secret;
+```
+
+**PostgreSQL:**
+```
+Host=localhost;Database=MyDB;Username=postgres;Password=secret;
+```
+
+#### Search Modes
+
+**1. Table Search Mode (Default)**
+
+When using table search mode, the connector will:
+- Get all specified tables (or all tables if `*` is specified)
+- For each table, search all text-like columns (VARCHAR, NVARCHAR, TEXT, etc.)
+- Return matching rows with relevance scoring
+
+Example configuration:
+- Tables: `Customers, Orders, Products`
+- Or Tables: `*` (search all tables)
+
+**2. Custom Query Mode**
+
+Use a custom SQL query for more control. Use `@SearchTerm` as a placeholder for the search term:
+
+```sql
+SELECT * FROM Products 
+WHERE Name LIKE '%' + @SearchTerm + '%' 
+   OR Description LIKE '%' + @SearchTerm + '%'
+```
+
+For LIKE queries with wildcards, use `@SearchTermWildcard` which includes `%` wildcards:
+
+```sql
+SELECT * FROM Products WHERE Name LIKE @SearchTermWildcard
+```
+
+#### Search Results
+
+Each search result includes:
+
+| Field | Description |
+|-------|-------------|
+| **Title** | First non-null text value from the record |
+| **Description** | Preview of column values |
+| **Table Name** | Source table of the record |
+| **Matching Columns** | Columns where the search term was found |
+| **All Fields** | Complete record data in metadata |
+
+#### Available Actions
+
+| Action | Description |
+|--------|-------------|
+| **Copy as JSON** | Copies the record as formatted JSON |
+| **Copy as INSERT** | Generates and copies a SQL INSERT statement |
+
+#### Example Usage
+
+1. Install required NuGet package for your database:
+   ```bash
+   dotnet add package Microsoft.Data.SqlClient
+   # or
+   dotnet add package MySql.Data
+   # or
+   dotnet add package Npgsql
+   ```
+
+2. Click **+** next to "Data Sources"
+3. Select **SQL Database** as the connector
+4. Enter a name (e.g., "Production Database")
+5. Configure:
+   - **Connection String**: Your database connection string
+   - **Database Type**: MSSQL, MySQL, or PostgreSQL
+   - **Tables**: `*` or specific tables like `Users, Products`
+6. Click **Save**
+7. Enable the data source and start searching!
+
+#### Security Considerations
+
+- Connection strings may contain sensitive credentials
+- Consider using Windows Authentication for SQL Server when possible
+- Use read-only database accounts for search operations
+- Connection strings are stored locally in the application settings
+
+#### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| "Provider not found" | Install the appropriate NuGet package for your database |
+| Connection timeout | Check firewall settings and ensure database is accessible |
+| No results | Verify table names are correct and contain text columns |
+| Access denied | Check database user permissions |
+
+---
+
+### DuckDuckGo Web Search Connector
+
+The DuckDuckGo Connector allows you to perform web searches directly from MSCC using the privacy-focused DuckDuckGo search engine.
+
+#### Features
+
+- **Privacy-focused**: Uses DuckDuckGo which doesn't track your searches
+- **No API key required**: Works out of the box without any registration
+- **Configurable result count**: Set how many results you want (1-30)
+- **Region settings**: Customize search results for your region
+- **SafeSearch support**: Filter out adult content
+
+#### Configuration
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| **Max Results** | No | 10 | Number of search results to return (1-30) |
+| **Region** | No | wt-wt | Region code for localized results |
+| **SafeSearch** | No | true | Enable family-friendly content filter |
+
+#### Region Codes
+
+| Code | Region |
+|------|--------|
+| `wt-wt` | Worldwide (no region bias) |
+| `de-de` | Germany |
+| `at-de` | Austria |
+| `ch-de` | Switzerland (German) |
+| `us-en` | United States |
+| `uk-en` | United Kingdom |
+| `fr-fr` | France |
+| `es-es` | Spain |
+| `it-it` | Italy |
+| `nl-nl` | Netherlands |
+
+For a complete list of region codes, see the [DuckDuckGo region documentation](https://duckduckgo.com/params).
+
+#### Search Results
+
+Each search result includes:
+
+| Field | Description |
+|-------|-------------|
+| **Title** | The webpage title |
+| **Description** | Snippet/summary from the page |
+| **URL** | Direct link to the webpage |
+| **Domain** | The website domain |
+| **Position** | Ranking position in search results |
+
+#### Available Actions
+
+| Action | Description |
+|--------|-------------|
+| **Open in Browser** | Opens the webpage in your default browser |
+| **Copy URL** | Copies the URL to clipboard |
+| **Search on DuckDuckGo** | Opens full DuckDuckGo results page for this query |
+
+#### Example Usage
+
+1. Click **+** next to "Data Sources"
+2. Select **DuckDuckGo Web Search** as the connector
+3. Enter a name (e.g., "Web Search")
+4. Configure:
+   - **Max Results**: 15 (or your preferred number)
+   - **Region**: de-de (for German results)
+   - **SafeSearch**: true
+5. Click **Save**
+6. Enable the data source and start searching!
+
+#### Technical Notes
+
+- The connector uses DuckDuckGo's HTML Lite interface for reliable parsing
+- No JavaScript execution is required
+- Results are parsed from the HTML response
+- Rate limiting may apply for very frequent searches
+
+#### Limitations
+
+- Maximum 30 results per search (DuckDuckGo limitation)
+- No image or video search (text results only)
+- Some advanced DuckDuckGo features (bangs, instant answers) are not available
 
 ---
 

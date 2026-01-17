@@ -218,6 +218,8 @@ public class DataSourceManager
         RegisterConnector(new FileSystemConnector());
         RegisterConnector(new MockDatabaseConnector());
         RegisterConnector(new MicrosoftGraphConnector());
+        RegisterConnector(new DuckDuckGoConnector());
+        RegisterConnector(new SqlDatabaseConnector());
     }
 
     /// <summary>
@@ -272,6 +274,12 @@ public class DataSourceManager
         
         if (template is MicrosoftGraphConnector)
             return new MicrosoftGraphConnector();
+        
+        if (template is DuckDuckGoConnector)
+            return new DuckDuckGoConnector();
+        
+        if (template is SqlDatabaseConnector)
+            return new SqlDatabaseConnector();
         
         // Gescriptete Konnektoren - versuche neue Instanz über Reflection zu erstellen
         if (template is ScriptedConnectorBase)

@@ -1,0 +1,777 @@
+// Meta Search and Control Center (c) 2026 Dennis Michael Heine
+// SQL Database Connector - Supports MySQL, MSSQL, PostgreSQL
+using System.Data;
+using System.Data.Common;
+using System.Diagnostics;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using MSCC.Models;
+
+namespace MSCC.Connectors;
+
+/// <summary>
+/// SQL Database Connector for searching across MySQL, MSSQL, and PostgreSQL databases.
+/// Supports searching all fields in specified tables or custom SQL queries.
+/// </summary>
+public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
+{
+    private string _connectionString = string.Empty;
+    private DatabaseType _databaseType = DatabaseType.MSSQL;
+    private string _tables = string.Empty;
+    private string _customQuery = string.Empty;
+    private bool _useCustomQuery;
+    private bool _isInitialized;
+    private DbConnection? _connection;
+
+    public string Id => "sql-database-connector";
+    public string Name => "SQL Database";
+    public string Description => "Searches SQL databases (MySQL, MSSQL, PostgreSQL).";
+    public string Version => "1.0.0";
+
+    public IEnumerable<ConnectorParameter> ConfigurationParameters =>
+    [
+        new ConnectorParameter
+        {
+            Name = "ConnectionString",
+            DisplayName = "Connection String",
+            Description = "Database connection string (e.g., 'Server=localhost;Database=mydb;User Id=user;Password=pass;')",
+            ParameterType = "string",
+            IsRequired = true
+        },
+        new ConnectorParameter
+        {
+            Name = "DatabaseType",
+            DisplayName = "Database Type",
+            Description = "Type of database: MSSQL, MySQL, or PostgreSQL",
+            ParameterType = "string",
+            IsRequired = true,
+            DefaultValue = "MSSQL"
+        },
+        new ConnectorParameter
+        {
+            Name = "Tables",
+            DisplayName = "Tables",
+            Description = "Comma-separated list of tables to search, or '*' for all tables. Ignored if custom query is provided.",
+            ParameterType = "string",
+            IsRequired = false,
+            DefaultValue = "*"
+        },
+        new ConnectorParameter
+        {
+            Name = "CustomQuery",
+            DisplayName = "Custom SQL Query",
+            Description = "Optional: Custom SELECT statement. Use @SearchTerm as placeholder for the search term.",
+            ParameterType = "string",
+            IsRequired = false
+        }
+    ];
+
+    public Task<bool> InitializeAsync(Dictionary<string, string> configuration)
+    {
+        try
+        {
+            // Connection String
+            if (!configuration.TryGetValue("ConnectionString", out var connectionString) || 
+                string.IsNullOrEmpty(connectionString))
+            {
+                Debug.WriteLine("[SqlDatabaseConnector] ConnectionString is required");
+                return Task.FromResult(false);
+            }
+            _connectionString = connectionString;
+
+            // Database Type
+            if (configuration.TryGetValue("DatabaseType", out var dbType))
+            {
+                _databaseType = dbType.ToUpperInvariant() switch
+                {
+                    "MYSQL" => DatabaseType.MySQL,
+                    "POSTGRESQL" or "POSTGRES" => DatabaseType.PostgreSQL,
+                    _ => DatabaseType.MSSQL
+                };
+            }
+
+            // Tables
+            if (configuration.TryGetValue("Tables", out var tables))
+            {
+                _tables = tables;
+            }
+            else
+            {
+                _tables = "*";
+            }
+
+            // Custom Query
+            if (configuration.TryGetValue("CustomQuery", out var customQuery) && 
+                !string.IsNullOrWhiteSpace(customQuery))
+            {
+                _customQuery = customQuery;
+                _useCustomQuery = true;
+            }
+
+            _isInitialized = true;
+            return Task.FromResult(true);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[SqlDatabaseConnector] Initialization failed: {ex.Message}");
+            return Task.FromResult(false);
+        }
+    }
+
+    public async Task<IEnumerable<SearchResult>> SearchAsync(
+        string searchTerm,
+        int maxResults = 100,
+        CancellationToken cancellationToken = default)
+    {
+        var results = new List<SearchResult>();
+
+        if (!_isInitialized || string.IsNullOrWhiteSpace(searchTerm))
+        {
+            return results;
+        }
+
+        Debug.WriteLine($"[SqlDatabaseConnector] Searching for '{searchTerm}' in {_databaseType}");
+
+        try
+        {
+            using var connection = CreateConnection();
+            await connection.OpenAsync(cancellationToken);
+
+            if (_useCustomQuery)
+            {
+                // Execute custom query
+                results = await ExecuteCustomQueryAsync(connection, searchTerm, maxResults, cancellationToken);
+            }
+            else
+            {
+                // Search in specified tables
+                var tablesToSearch = await GetTablesToSearchAsync(connection, cancellationToken);
+                
+                foreach (var table in tablesToSearch)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                        break;
+
+                    if (results.Count >= maxResults)
+                        break;
+
+                    var tableResults = await SearchTableAsync(
+                        connection, table, searchTerm, 
+                        maxResults - results.Count, cancellationToken);
+                    
+                    results.AddRange(tableResults);
+                }
+            }
+
+            Debug.WriteLine($"[SqlDatabaseConnector] Found {results.Count} results");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[SqlDatabaseConnector] Search error: {ex.Message}");
+        }
+
+        return results.Take(maxResults);
+    }
+
+    private DbConnection CreateConnection()
+    {
+        return _databaseType switch
+        {
+            DatabaseType.MySQL => CreateMySqlConnection(),
+            DatabaseType.PostgreSQL => CreateNpgsqlConnection(),
+            _ => CreateSqlServerConnection()
+        };
+    }
+
+    private DbConnection CreateSqlServerConnection()
+    {
+        // Use Microsoft.Data.SqlClient via reflection to avoid hard dependency
+        var assemblyName = "Microsoft.Data.SqlClient";
+        var typeName = "Microsoft.Data.SqlClient.SqlConnection";
+        
+        try
+        {
+            var assembly = System.Reflection.Assembly.Load(assemblyName);
+            var type = assembly.GetType(typeName);
+            if (type != null)
+            {
+                var connection = Activator.CreateInstance(type, _connectionString) as DbConnection;
+                return connection ?? throw new InvalidOperationException("Failed to create SQL Server connection");
+            }
+        }
+        catch
+        {
+            // Fallback to System.Data.SqlClient
+            var fallbackType = Type.GetType("System.Data.SqlClient.SqlConnection, System.Data.SqlClient");
+            if (fallbackType != null)
+            {
+                var connection = Activator.CreateInstance(fallbackType, _connectionString) as DbConnection;
+                return connection ?? throw new InvalidOperationException("Failed to create SQL Server connection");
+            }
+        }
+        
+        throw new InvalidOperationException(
+            "SQL Server provider not found. Please install Microsoft.Data.SqlClient NuGet package.");
+    }
+
+    private DbConnection CreateMySqlConnection()
+    {
+        var assemblyName = "MySql.Data";
+        var typeName = "MySql.Data.MySqlClient.MySqlConnection";
+        
+        try
+        {
+            var assembly = System.Reflection.Assembly.Load(assemblyName);
+            var type = assembly.GetType(typeName);
+            if (type != null)
+            {
+                var connection = Activator.CreateInstance(type, _connectionString) as DbConnection;
+                return connection ?? throw new InvalidOperationException("Failed to create MySQL connection");
+            }
+        }
+        catch
+        {
+            // Try MySqlConnector as alternative
+            try
+            {
+                var altAssembly = System.Reflection.Assembly.Load("MySqlConnector");
+                var altType = altAssembly.GetType("MySqlConnector.MySqlConnection");
+                if (altType != null)
+                {
+                    var connection = Activator.CreateInstance(altType, _connectionString) as DbConnection;
+                    return connection ?? throw new InvalidOperationException("Failed to create MySQL connection");
+                }
+            }
+            catch { }
+        }
+        
+        throw new InvalidOperationException(
+            "MySQL provider not found. Please install MySql.Data or MySqlConnector NuGet package.");
+    }
+
+    private DbConnection CreateNpgsqlConnection()
+    {
+        var assemblyName = "Npgsql";
+        var typeName = "Npgsql.NpgsqlConnection";
+        
+        try
+        {
+            var assembly = System.Reflection.Assembly.Load(assemblyName);
+            var type = assembly.GetType(typeName);
+            if (type != null)
+            {
+                var connection = Activator.CreateInstance(type, _connectionString) as DbConnection;
+                return connection ?? throw new InvalidOperationException("Failed to create PostgreSQL connection");
+            }
+        }
+        catch { }
+        
+        throw new InvalidOperationException(
+            "PostgreSQL provider not found. Please install Npgsql NuGet package.");
+    }
+
+    private async Task<List<string>> GetTablesToSearchAsync(
+        DbConnection connection, 
+        CancellationToken cancellationToken)
+    {
+        var tables = new List<string>();
+
+        if (_tables != "*" && !string.IsNullOrWhiteSpace(_tables))
+        {
+            // Use specified tables
+            tables.AddRange(_tables.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(t => t.Trim()));
+            return tables;
+        }
+
+        // Get all tables from database
+        var query = _databaseType switch
+        {
+            DatabaseType.MySQL => "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE'",
+            DatabaseType.PostgreSQL => "SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'",
+            _ => "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'"
+        };
+
+        using var command = connection.CreateCommand();
+        command.CommandText = query;
+
+        using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            tables.Add(reader.GetString(0));
+        }
+
+        return tables;
+    }
+
+    private async Task<List<SearchResult>> SearchTableAsync(
+        DbConnection connection,
+        string tableName,
+        string searchTerm,
+        int maxResults,
+        CancellationToken cancellationToken)
+    {
+        var results = new List<SearchResult>();
+
+        try
+        {
+            // Get column names for the table
+            var columns = await GetTableColumnsAsync(connection, tableName, cancellationToken);
+            
+            if (columns.Count == 0)
+                return results;
+
+            // Build search query with LIKE for each column
+            var whereClause = BuildSearchWhereClause(columns, searchTerm);
+            var quotedTableName = QuoteIdentifier(tableName);
+            
+            var query = $"SELECT * FROM {quotedTableName} WHERE {whereClause}";
+            
+            // Add LIMIT/TOP based on database type
+            query = _databaseType switch
+            {
+                DatabaseType.MSSQL => $"SELECT TOP {maxResults} * FROM {quotedTableName} WHERE {whereClause}",
+                _ => $"{query} LIMIT {maxResults}"
+            };
+
+            using var command = connection.CreateCommand();
+            command.CommandText = query;
+            
+            // Add parameter for search term
+            var param = command.CreateParameter();
+            param.ParameterName = "@SearchTerm";
+            param.Value = $"%{searchTerm}%";
+            command.Parameters.Add(param);
+
+            using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                if (results.Count >= maxResults)
+                    break;
+
+                var result = CreateSearchResultFromRow(reader, tableName, searchTerm, columns);
+                results.Add(result);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[SqlDatabaseConnector] Error searching table {tableName}: {ex.Message}");
+        }
+
+        return results;
+    }
+
+    private async Task<List<ColumnInfo>> GetTableColumnsAsync(
+        DbConnection connection,
+        string tableName,
+        CancellationToken cancellationToken)
+    {
+        var columns = new List<ColumnInfo>();
+
+        var query = _databaseType switch
+        {
+            DatabaseType.MySQL => @"SELECT COLUMN_NAME, DATA_TYPE 
+                                    FROM INFORMATION_SCHEMA.COLUMNS 
+                                    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = @TableName",
+            DatabaseType.PostgreSQL => @"SELECT column_name, data_type 
+                                         FROM information_schema.columns 
+                                         WHERE table_schema = 'public' AND table_name = @TableName",
+            _ => @"SELECT COLUMN_NAME, DATA_TYPE 
+                   FROM INFORMATION_SCHEMA.COLUMNS 
+                   WHERE TABLE_NAME = @TableName"
+        };
+
+        using var command = connection.CreateCommand();
+        command.CommandText = query;
+        
+        var param = command.CreateParameter();
+        param.ParameterName = "@TableName";
+        param.Value = tableName;
+        command.Parameters.Add(param);
+
+        using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            columns.Add(new ColumnInfo
+            {
+                Name = reader.GetString(0),
+                DataType = reader.GetString(1)
+            });
+        }
+
+        return columns;
+    }
+
+    private string BuildSearchWhereClause(List<ColumnInfo> columns, string searchTerm)
+    {
+        var conditions = new List<string>();
+        
+        foreach (var column in columns)
+        {
+            // Only search in text-like columns
+            if (IsSearchableColumn(column.DataType))
+            {
+                var quotedColumn = QuoteIdentifier(column.Name);
+                var castExpression = _databaseType switch
+                {
+                    DatabaseType.PostgreSQL => $"CAST({quotedColumn} AS TEXT)",
+                    _ => $"CAST({quotedColumn} AS NVARCHAR(MAX))"
+                };
+                conditions.Add($"{castExpression} LIKE @SearchTerm");
+            }
+        }
+
+        if (conditions.Count == 0)
+        {
+            // Fallback: search first column
+            if (columns.Count > 0)
+            {
+                var quotedColumn = QuoteIdentifier(columns[0].Name);
+                conditions.Add($"CAST({quotedColumn} AS NVARCHAR(MAX)) LIKE @SearchTerm");
+            }
+            else
+            {
+                return "1=0"; // No columns to search
+            }
+        }
+
+        return string.Join(" OR ", conditions);
+    }
+
+    private static bool IsSearchableColumn(string dataType)
+    {
+        var searchableTypes = new[]
+        {
+            "varchar", "nvarchar", "char", "nchar", "text", "ntext",
+            "character varying", "character", // PostgreSQL
+            "longtext", "mediumtext", "tinytext", // MySQL
+            "xml", "json"
+        };
+
+        return searchableTypes.Any(t => 
+            dataType.StartsWith(t, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private string QuoteIdentifier(string identifier)
+    {
+        return _databaseType switch
+        {
+            DatabaseType.MySQL => $"`{identifier}`",
+            DatabaseType.PostgreSQL => $"\"{identifier}\"",
+            _ => $"[{identifier}]"
+        };
+    }
+
+    private SearchResult CreateSearchResultFromRow(
+        DbDataReader reader, 
+        string tableName, 
+        string searchTerm,
+        List<ColumnInfo> columns)
+    {
+        var metadata = new Dictionary<string, object>
+        {
+            ["Type"] = "SqlRecord",
+            ["TableName"] = tableName,
+            ["DatabaseType"] = _databaseType.ToString()
+        };
+
+        var matchingColumns = new List<string>();
+        var title = "";
+        var description = new StringBuilder();
+
+        for (int i = 0; i < reader.FieldCount; i++)
+        {
+            var columnName = reader.GetName(i);
+            var value = reader.IsDBNull(i) ? null : reader.GetValue(i);
+            
+            metadata[columnName] = value ?? DBNull.Value;
+
+            if (value != null)
+            {
+                var stringValue = value.ToString() ?? "";
+                
+                // Check if this column contains the search term
+                if (stringValue.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                {
+                    matchingColumns.Add(columnName);
+                }
+
+                // Use first non-null string column as title
+                if (string.IsNullOrEmpty(title) && !string.IsNullOrWhiteSpace(stringValue))
+                {
+                    title = stringValue.Length > 100 
+                        ? stringValue[..100] + "..." 
+                        : stringValue;
+                }
+
+                // Build description from first few columns
+                if (description.Length < 200)
+                {
+                    if (description.Length > 0)
+                        description.Append(" | ");
+                    description.Append($"{columnName}: {(stringValue.Length > 50 ? stringValue[..50] + "..." : stringValue)}");
+                }
+            }
+        }
+
+        metadata["MatchingColumns"] = string.Join(", ", matchingColumns);
+
+        return new SearchResult
+        {
+            Title = string.IsNullOrEmpty(title) ? $"[{tableName}] Record" : title,
+            Description = description.ToString(),
+            SourceName = $"SQL - {tableName}",
+            ConnectorId = Id,
+            OriginalReference = $"{tableName}:{Guid.NewGuid():N}",
+            RelevanceScore = Math.Min(100, 50 + (matchingColumns.Count * 10)),
+            Metadata = metadata
+        };
+    }
+
+    private async Task<List<SearchResult>> ExecuteCustomQueryAsync(
+        DbConnection connection,
+        string searchTerm,
+        int maxResults,
+        CancellationToken cancellationToken)
+    {
+        var results = new List<SearchResult>();
+
+        try
+        {
+            using var command = connection.CreateCommand();
+            
+            // Replace @SearchTerm placeholder
+            command.CommandText = _customQuery.Replace("@SearchTerm", "@SearchTermParam");
+            
+            var param = command.CreateParameter();
+            param.ParameterName = "@SearchTermParam";
+            param.Value = searchTerm;
+            command.Parameters.Add(param);
+
+            // Also add wildcards version
+            var wildcardParam = command.CreateParameter();
+            wildcardParam.ParameterName = "@SearchTermWildcard";
+            wildcardParam.Value = $"%{searchTerm}%";
+            command.Parameters.Add(wildcardParam);
+
+            using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            
+            var columns = new List<ColumnInfo>();
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                columns.Add(new ColumnInfo 
+                { 
+                    Name = reader.GetName(i), 
+                    DataType = reader.GetDataTypeName(i) 
+                });
+            }
+
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                if (results.Count >= maxResults)
+                    break;
+
+                var result = CreateSearchResultFromRow(reader, "CustomQuery", searchTerm, columns);
+                results.Add(result);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[SqlDatabaseConnector] Custom query error: {ex.Message}");
+        }
+
+        return results;
+    }
+
+    public async Task<bool> TestConnectionAsync()
+    {
+        if (!_isInitialized)
+            return false;
+
+        try
+        {
+            using var connection = CreateConnection();
+            await connection.OpenAsync();
+            return connection.State == ConnectionState.Open;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[SqlDatabaseConnector] Connection test failed: {ex.Message}");
+            return false;
+        }
+    }
+
+    public DetailViewConfiguration GetDetailViewConfiguration(SearchResult result)
+    {
+        return new DetailViewConfiguration
+        {
+            ViewType = DetailViewType.Custom,
+            DisplayProperties = ["TableName", "MatchingColumns"],
+            Actions = GetSqlActions()
+        };
+    }
+
+    private static List<ResultAction> GetSqlActions() =>
+    [
+        new() { Id = "copy-json", Name = "Copy as JSON", Icon = "[JSON]", Description = "Copy record as JSON to clipboard" },
+        new() { Id = "copy-insert", Name = "Copy as INSERT", Icon = "[SQL]", Description = "Copy as SQL INSERT statement" }
+    ];
+
+    public FrameworkElement? CreateCustomDetailView(SearchResult result)
+    {
+        var stackPanel = new StackPanel { Margin = new Thickness(8) };
+
+        // Header
+        var tableName = result.Metadata.GetValueOrDefault("TableName")?.ToString() ?? "Unknown";
+        var dbType = result.Metadata.GetValueOrDefault("DatabaseType")?.ToString() ?? "";
+        
+        var header = new TextBlock
+        {
+            Text = $"[{dbType}] {tableName}",
+            FontSize = 16,
+            FontWeight = FontWeights.Bold,
+            Foreground = new SolidColorBrush(Color.FromRgb(52, 73, 94)),
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+        stackPanel.Children.Add(header);
+
+        // Matching columns info
+        var matchingCols = result.Metadata.GetValueOrDefault("MatchingColumns")?.ToString();
+        if (!string.IsNullOrEmpty(matchingCols))
+        {
+            var matchBlock = new TextBlock
+            {
+                Text = $"Matches in: {matchingCols}",
+                FontSize = 12,
+                FontStyle = FontStyles.Italic,
+                Foreground = new SolidColorBrush(Color.FromRgb(39, 174, 96)),
+                Margin = new Thickness(0, 0, 0, 12)
+            };
+            stackPanel.Children.Add(matchBlock);
+        }
+
+        // Create data grid for record fields
+        var grid = new Grid { Margin = new Thickness(0, 8, 0, 0) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        var rowIndex = 0;
+        var excludeKeys = new[] { "Type", "TableName", "DatabaseType", "MatchingColumns" };
+
+        foreach (var kvp in result.Metadata)
+        {
+            if (excludeKeys.Contains(kvp.Key))
+                continue;
+
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            // Column name
+            var nameBlock = new TextBlock
+            {
+                Text = kvp.Key,
+                FontWeight = FontWeights.SemiBold,
+                FontSize = 12,
+                Margin = new Thickness(0, 2, 8, 2),
+                Foreground = new SolidColorBrush(Color.FromRgb(52, 73, 94))
+            };
+            Grid.SetRow(nameBlock, rowIndex);
+            Grid.SetColumn(nameBlock, 0);
+            grid.Children.Add(nameBlock);
+
+            // Value
+            var valueText = kvp.Value?.ToString() ?? "(NULL)";
+            if (valueText.Length > 200)
+                valueText = valueText[..200] + "...";
+
+            var valueBlock = new TextBlock
+            {
+                Text = valueText,
+                FontSize = 12,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 2, 0, 2),
+                Foreground = kvp.Value == null || kvp.Value == DBNull.Value
+                    ? new SolidColorBrush(Colors.Gray)
+                    : new SolidColorBrush(Colors.Black)
+            };
+            Grid.SetRow(valueBlock, rowIndex);
+            Grid.SetColumn(valueBlock, 1);
+            grid.Children.Add(valueBlock);
+
+            rowIndex++;
+        }
+
+        // Wrap grid in ScrollViewer for long records
+        var scrollViewer = new ScrollViewer
+        {
+            Content = grid,
+            MaxHeight = 300,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+        };
+
+        stackPanel.Children.Add(scrollViewer);
+
+        return stackPanel;
+    }
+
+    public async Task<bool> ExecuteActionAsync(SearchResult result, string actionId)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var excludeKeys = new[] { "Type", "TableName", "DatabaseType", "MatchingColumns" };
+                var data = result.Metadata
+                    .Where(kvp => !excludeKeys.Contains(kvp.Key))
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+                switch (actionId)
+                {
+                    case "copy-json":
+                        var json = System.Text.Json.JsonSerializer.Serialize(data, 
+                            new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                        Application.Current.Dispatcher.Invoke(() => Clipboard.SetText(json));
+                        return true;
+
+                    case "copy-insert":
+                        var tableName = result.Metadata.GetValueOrDefault("TableName")?.ToString() ?? "TableName";
+                        var columns = string.Join(", ", data.Keys);
+                        var values = string.Join(", ", data.Values.Select(v => 
+                            v == null || v == DBNull.Value ? "NULL" : $"'{v.ToString()?.Replace("'", "''")}'"));
+                        var insertSql = $"INSERT INTO {tableName} ({columns}) VALUES ({values});";
+                        Application.Current.Dispatcher.Invoke(() => Clipboard.SetText(insertSql));
+                        return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SqlDatabaseConnector] Action error: {ex.Message}");
+            }
+
+            return false;
+        });
+    }
+
+    public void Dispose()
+    {
+        _connection?.Dispose();
+        _connection = null;
+        _isInitialized = false;
+        GC.SuppressFinalize(this);
+    }
+
+    private enum DatabaseType
+    {
+        MSSQL,
+        MySQL,
+        PostgreSQL
+    }
+
+    private class ColumnInfo
+    {
+        public string Name { get; set; } = string.Empty;
+        public string DataType { get; set; } = string.Empty;
+    }
+}
