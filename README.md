@@ -10,6 +10,9 @@ An extensible meta search engine for Windows that can search multiple data sourc
 - [Connectors and Data Sources](#connectors-and-data-sources)
   - [Microsoft 365 Connector](#microsoft-365-connector)
   - [SQL Database Connector](#sql-database-connector)
+  - [DuckDuckGo Web Search Connector](#duckduckgo-web-search-connector)
+  - [OpenAI Connector](#openai-connector)
+  - [Generic API Connector](#generic-api-connector)
 - [Plugin Development](#plugin-development)
   - [Option 1: Script-based Plugins](#option-1-script-based-plugins)
   - [Option 2: Compiled Plugins (Visual Studio)](#option-2-compiled-plugins-visual-studio)
@@ -36,6 +39,8 @@ An extensible meta search engine for Windows that can search multiple data sourc
 | **Microsoft 365** | Searches Calendar, ToDo, Emails, and OneNote via Microsoft Graph API |
 | **DuckDuckGo** | Performs web searches using DuckDuckGo |
 | **SQL Database** | Searches SQL databases (MySQL, MSSQL, PostgreSQL) |
+| **OpenAI API** | Queries OpenAI-compatible AI APIs (ChatGPT, local LLMs) |
+| **Generic API** | Connects to any REST API with flexible authentication |
 | **Mock Database** | Demo connector for testing purposes |
 
 ---
@@ -418,6 +423,314 @@ Each search result includes:
 - Maximum 30 results per search (DuckDuckGo limitation)
 - No image or video search (text results only)
 - Some advanced DuckDuckGo features (bangs, instant answers) are not available
+
+---
+
+### OpenAI Connector
+
+The OpenAI Connector allows you to query OpenAI-compatible AI APIs directly from MSCC. This includes OpenAI's ChatGPT, Azure OpenAI, and local LLM servers that implement the OpenAI API format (like Ollama, LM Studio, or llama.cpp server).
+
+#### Features
+
+- **ChatGPT Integration**: Query OpenAI's GPT models directly
+- **Local LLM Support**: Works with any OpenAI-compatible API endpoint
+- **Customizable System Prompt**: Define the AI's behavior and context
+- **Token Control**: Set maximum response length
+- **Temperature Settings**: Control response creativity
+
+#### Prerequisites
+
+For OpenAI API:
+1. Create an account at [https://platform.openai.com](https://platform.openai.com)
+2. Generate an API key in your account settings
+3. Ensure you have API credits available
+
+For Local LLMs:
+1. Install and run a local LLM server (e.g., Ollama, LM Studio)
+2. Note the API endpoint URL (typically `http://localhost:11434/v1/chat/completions` for Ollama)
+
+#### Configuration
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| **API Endpoint** | Yes | `https://api.openai.com/v1/chat/completions` | The API endpoint URL |
+| **API Key** | Yes | - | Your API authentication token |
+| **Model** | Yes | `gpt-3.5-turbo` | The AI model to use (e.g., `gpt-4`, `gpt-3.5-turbo`, `llama2`) |
+| **System Prompt** | No | `You are a helpful assistant...` | Instructions that define the AI's behavior |
+| **Max Tokens** | No | 1000 | Maximum tokens in the response (1-128000) |
+| **Temperature** | No | 0.7 | Response creativity (0.0 = deterministic, 2.0 = very creative) |
+
+#### Endpoint Examples
+
+| Service | Endpoint URL |
+|---------|-------------|
+| **OpenAI** | `https://api.openai.com/v1/chat/completions` |
+| **Azure OpenAI** | `https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions?api-version=2024-02-01` |
+| **Ollama** | `http://localhost:11434/v1/chat/completions` |
+| **LM Studio** | `http://localhost:1234/v1/chat/completions` |
+| **llama.cpp** | `http://localhost:8080/v1/chat/completions` |
+
+#### Model Examples
+
+| Provider | Model Names |
+|----------|-------------|
+| **OpenAI** | `gpt-4`, `gpt-4-turbo`, `gpt-3.5-turbo`, `gpt-4o`, `gpt-4o-mini` |
+| **Ollama** | `llama2`, `llama3`, `mistral`, `codellama`, `mixtral` |
+| **Azure OpenAI** | Your deployment name |
+
+#### Search Results
+
+Each query returns a single result containing:
+
+| Field | Description |
+|-------|-------------|
+| **Title** | First 100 characters of the AI response |
+| **Description** | Full AI response text |
+| **Model** | The model that generated the response |
+| **Prompt Tokens** | Number of tokens in your query |
+| **Completion Tokens** | Number of tokens in the response |
+| **Total Tokens** | Total tokens used |
+| **Finish Reason** | Why the response ended (e.g., `stop`, `length`) |
+
+#### Available Actions
+
+| Action | Description |
+|--------|-------------|
+| **Copy Response** | Copies the full AI response to clipboard |
+| **Copy Query** | Copies your original query to clipboard |
+
+#### Example Usage
+
+1. Click **+** next to "Data Sources"
+2. Select **OpenAI API** as the connector
+3. Enter a name (e.g., "ChatGPT" or "Local Llama")
+4. Configure:
+   - **API Endpoint**: Your API URL
+   - **API Key**: Your API key
+   - **Model**: `gpt-3.5-turbo` or your preferred model
+   - **System Prompt**: (optional) Customize AI behavior
+5. Click **Save**
+6. Enable the data source and start querying!
+
+#### Example System Prompts
+
+**Code Assistant:**
+```
+You are a helpful programming assistant. Provide concise code examples and explanations. Use markdown formatting for code blocks.
+```
+
+**Research Assistant:**
+```
+You are a research assistant. Provide factual, well-structured answers with sources when possible. Be concise but thorough.
+```
+
+**Translation Assistant:**
+```
+You are a translation assistant. Translate any text the user provides into English. Maintain the original meaning and tone.
+```
+
+#### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| "401 Unauthorized" | Check your API key is correct and has not expired |
+| "429 Too Many Requests" | You've exceeded rate limits; wait and try again |
+| "Model not found" | Verify the model name is correct for your endpoint |
+| Timeout errors | Increase timeout in advanced settings or reduce max tokens |
+| Empty responses | Check that max tokens > 0 and the model supports your query |
+
+#### Cost Considerations
+
+- OpenAI charges per token (both input and output)
+- GPT-4 is significantly more expensive than GPT-3.5-turbo
+- Monitor usage at [https://platform.openai.com/usage](https://platform.openai.com/usage)
+- Local LLMs (Ollama, LM Studio) are free but require local resources
+
+---
+
+### Generic API Connector
+
+The Generic API Connector allows you to connect to any REST API with flexible authentication and search parameter configuration. This is ideal for integrating custom APIs, third-party services, or internal company APIs that don't have a dedicated connector.
+
+#### Features
+
+- **Multiple HTTP Methods**: GET, POST, PUT, PATCH, DELETE
+- **Flexible Authentication**: None, Header-based, Bearer Token, OAuth2, JWT, Query Parameter, Post Parameter
+- **Custom Headers**: Add any custom HTTP headers
+- **JSON Path Navigation**: Extract results from nested JSON structures
+- **Configurable Result Mapping**: Map JSON properties to title, description, and URL
+
+#### Supported Authentication Types
+
+| Type | Description | Required Parameters |
+|------|-------------|---------------------|
+| **None** | No authentication | - |
+| **Header** | Custom header authentication | `AuthHeaderName`, `AuthHeaderValue` |
+| **Bearer** | Bearer token authentication | `AuthToken` |
+| **OAuth2** | OAuth 2.0 client credentials flow | `OAuth2TokenEndpoint`, `OAuth2ClientId`, `OAuth2ClientSecret` |
+| **JWT** | JWT token authentication | `AuthToken` (your JWT token) |
+| **Query** | API key in query string | `AuthToken` (format: `key=value`) |
+| **Post** | API key in POST body | `AuthToken` (format: `key=value`) |
+
+#### Configuration
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| **API Endpoint** | Yes | - | Base URL. Use `[SEARCH]` as placeholder for search term |
+| **HTTP Method** | Yes | GET | HTTP method: GET, POST, PUT, PATCH, DELETE |
+| **Auth Type** | Yes | None | Authentication method (see above) |
+| **Auth Header Name** | No | Authorization | Header name for Header-based auth |
+| **Auth Header Value** | No | - | Header value for Header-based auth |
+| **Auth Token** | No | - | Token for Bearer/JWT auth, or `key=value` for Query/Post auth |
+| **OAuth2 Token Endpoint** | No | - | URL to obtain OAuth2 access token |
+| **OAuth2 Client ID** | No | - | OAuth2 client ID |
+| **OAuth2 Client Secret** | No | - | OAuth2 client secret |
+| **OAuth2 Scope** | No | - | OAuth2 scope (optional) |
+| **Query Parameters** | No | `q=[SEARCH]` | URL query parameters. Use `[SEARCH]` for search term |
+| **POST Body** | No | - | Request body for POST/PUT/PATCH. Use `[SEARCH]` for search term |
+| **Content Type** | No | application/json | Content-Type header for request body |
+| **Custom Headers** | No | - | Additional headers, one per line (format: `Header-Name: value`) |
+| **Result JSON Path** | No | results | Path to results array in JSON (e.g., `data.results`) |
+| **Result Title Property** | No | title | JSON property name for result title |
+| **Result Description Property** | No | description | JSON property name for result description |
+| **Result URL Property** | No | url | JSON property name for result URL |
+| **Timeout (seconds)** | No | 30 | Request timeout (1-300 seconds) |
+
+#### The [SEARCH] Placeholder
+
+Use `[SEARCH]` anywhere in your configuration to insert the search term:
+
+- In the **API Endpoint**: `https://api.example.com/search/[SEARCH]`
+- In **Query Parameters**: `q=[SEARCH]&limit=10`
+- In **POST Body**: `{"query": "[SEARCH]", "maxResults": 10}`
+
+The placeholder is automatically URL-encoded when used in URLs and query parameters.
+
+#### JSON Path Navigation
+
+The `Result JSON Path` parameter supports:
+
+- Simple paths: `results`, `data`, `items`
+- Nested paths: `data.results`, `response.data.items`
+- Array indexing: `results[0].items`
+
+**Example API Response:**
+```json
+{
+  "status": "ok",
+  "data": {
+    "results": [
+      {"title": "Result 1", "desc": "Description 1"},
+      {"title": "Result 2", "desc": "Description 2"}
+    ]
+  }
+}
+```
+
+**Configuration:**
+- Result JSON Path: `data.results`
+- Result Title Property: `title`
+- Result Description Property: `desc`
+
+#### Configuration Examples
+
+##### Example 1: Simple GET API with API Key
+
+**API**: A weather API that uses query parameters
+
+| Setting | Value |
+|---------|-------|
+| API Endpoint | `https://api.weather.com/v1/search` |
+| HTTP Method | GET |
+| Auth Type | Query |
+| Auth Token | `apikey=your-api-key-here` |
+| Query Parameters | `q=[SEARCH]&format=json` |
+| Result JSON Path | `locations` |
+| Result Title Property | `name` |
+| Result Description Property | `country` |
+
+##### Example 2: POST API with Bearer Token
+
+**API**: A search API that requires POST requests
+
+| Setting | Value |
+|---------|-------|
+| API Endpoint | `https://api.example.com/search` |
+| HTTP Method | POST |
+| Auth Type | Bearer |
+| Auth Token | `your-bearer-token` |
+| Content Type | application/json |
+| POST Body | `{"query": "[SEARCH]", "limit": 20}` |
+| Result JSON Path | `results` |
+| Result Title Property | `name` |
+| Result Description Property | `summary` |
+| Result URL Property | `link` |
+
+##### Example 3: OAuth2 Client Credentials
+
+**API**: An enterprise API using OAuth2
+
+| Setting | Value |
+|---------|-------|
+| API Endpoint | `https://api.enterprise.com/v2/search` |
+| HTTP Method | GET |
+| Auth Type | OAuth2 |
+| OAuth2 Token Endpoint | `https://auth.enterprise.com/oauth/token` |
+| OAuth2 Client ID | `your-client-id` |
+| OAuth2 Client Secret | `your-client-secret` |
+| OAuth2 Scope | `read:search` |
+| Query Parameters | `q=[SEARCH]` |
+
+##### Example 4: Custom Header Authentication
+
+**API**: An API using a custom authentication header
+
+| Setting | Value |
+|---------|-------|
+| API Endpoint | `https://api.service.com/search` |
+| HTTP Method | GET |
+| Auth Type | Header |
+| Auth Header Name | `X-API-Key` |
+| Auth Header Value | `your-api-key` |
+| Custom Headers | `X-Request-Source: MSCC` |
+| Query Parameters | `term=[SEARCH]&max=25` |
+
+#### Available Actions
+
+| Action | Description |
+|--------|-------------|
+| **Open URL** | Opens the result URL in your default browser |
+| **Copy as JSON** | Copies the result data as formatted JSON |
+| **Copy URL** | Copies the result URL to clipboard |
+
+#### Example Usage
+
+1. Click **+** next to "Data Sources"
+2. Select **Generic API** as the connector
+3. Enter a name (e.g., "Company API")
+4. Configure all required parameters based on your API's documentation
+5. Click **Save**
+6. Test with a simple search to verify configuration
+7. Enable the data source and start searching!
+
+#### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| "401 Unauthorized" | Check authentication configuration matches API requirements |
+| "400 Bad Request" | Verify POST body format and Content-Type header |
+| Empty results | Check Result JSON Path matches actual API response structure |
+| Timeout | Increase timeout value or check API endpoint availability |
+| Wrong data displayed | Verify Result Title/Description/URL properties match JSON field names |
+| OAuth2 fails | Ensure token endpoint, client ID, and secret are all correct |
+
+#### Tips
+
+1. **Test with API tools first**: Use Postman or curl to understand the API before configuring
+2. **Check API documentation**: Verify required headers, authentication, and response format
+3. **Start simple**: Begin with minimal configuration and add complexity as needed
+4. **Use browser dev tools**: Inspect network requests if the API is used by a web app
+5. **Handle pagination**: If the API returns paginated results, set appropriate limit parameters
 
 ---
 
