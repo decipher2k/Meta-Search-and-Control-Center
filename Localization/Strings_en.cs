@@ -382,5 +382,28 @@ public static class Strings_en
         ["Connector_FindInFiles_CopyPath_Desc"] = "Copy file path to clipboard",
         ["Connector_FindInFiles_CopyMatches"] = "Copy Matches",
         ["Connector_FindInFiles_CopyMatches_Desc"] = "Copy all matches to clipboard",
+
+        // === AI Search ===
+        ["AiSearch"] = "AI Search",
+        ["AiSearchTooltip"] = "Analyze search results with AI",
+        ["AiSearchDescription"] = "Enter a system prompt to analyze the search results with AI.",
+        ["AiSystemPrompt"] = "System Prompt",
+        ["AiDefaultPrompt"] = "You are a helpful assistant. Analyze the following search results and provide a concise summary highlighting the most relevant information.",
+        ["AiResultsToAnalyze"] = "{0} results will be analyzed",
+        ["AiAnalyzeButton"] = "Analyze with AI",
+        ["AiPromptRequired"] = "Please enter a system prompt.",
+        ["AiNoResults"] = "No search results to analyze. Please perform a search first.",
+        ["AiAnalyzing"] = "Analyzing with AI...",
+        ["AiAnalysisComplete"] = "AI analysis complete",
+        ["AiAnalysisResult"] = "AI Analysis Result",
+        ["AiCopyResponse"] = "Copy Response",
+        ["AiResponseCopied"] = "Response copied to clipboard.",
+        ["AiModel"] = "Model",
+        ["AiPromptTokens"] = "Prompt",
+        ["AiCompletionTokens"] = "Completion",
+        ["AiTotalTokens"] = "Total",
+        ["AiApiEndpoint"] = "API Endpoint",
+        ["AiApiKey"] = "API Key",
+        ["AiModelHint"] = "e.g., gpt-4, gpt-3.5-turbo, llama2",
     };
 }

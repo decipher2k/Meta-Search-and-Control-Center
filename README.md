@@ -7,6 +7,7 @@ An extensible meta search engine for Windows that can search multiple data sourc
 - [Feature Overview](#feature-overview)
 - [Installation](#installation)
 - [User Interface](#user-interface)
+- [AI Search](#ai-search)
 - [Connectors and Data Sources](#connectors-and-data-sources)
   - [File System Connector](#file-system-connector)
   - [Find In Files Connector](#find-in-files-connector)
@@ -90,6 +91,158 @@ The main window is divided into three areas:
 1. Enable the desired data sources (checkbox)
 2. Enter a search term
 3. Press **Enter** or click **Search**
+
+---
+
+## AI Search
+
+The AI Search feature allows you to analyze your search results using an AI language model. Instead of manually reviewing each result, you can have an AI summarize, categorize, or extract insights from your search results.
+
+### Features
+
+- **Automatic Search Execution**: If you have a search term but haven't searched yet, clicking "AI Search" will automatically perform the search first
+- **Customizable System Prompt**: Define how the AI should analyze your results
+- **HTML-Formatted Output**: Results are displayed in a rich HTML view with proper formatting
+- **WebView2 Rendering**: Modern web-based display with support for tables, lists, and styled content
+- **Token Usage Tracking**: See how many tokens were used for the request and response
+
+### Prerequisites
+
+Before using AI Search, you need to configure an AI API in the application settings:
+
+1. Go to **File ? Settings**
+2. Navigate to the **AI Search** section
+3. Configure the following:
+
+| Setting | Description | Example |
+|---------|-------------|---------|
+| **API Endpoint** | The URL of your AI API | `https://api.openai.com/v1/chat/completions` |
+| **API Key** | Your authentication token | `sk-...` |
+| **Model** | The AI model to use | `gpt-4`, `gpt-3.5-turbo`, `llama2` |
+
+#### Supported AI Providers
+
+| Provider | Endpoint | Notes |
+|----------|----------|-------|
+| **OpenAI** | `https://api.openai.com/v1/chat/completions` | Requires API key from [platform.openai.com](https://platform.openai.com) |
+| **Azure OpenAI** | `https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions?api-version=2024-02-01` | Use your Azure deployment |
+| **Ollama** | `http://localhost:11434/v1/chat/completions` | Free, local, no API key needed |
+| **LM Studio** | `http://localhost:1234/v1/chat/completions` | Free, local, no API key needed |
+| **Any OpenAI-compatible API** | Varies | Must support the OpenAI chat completions format |
+
+### How to Use
+
+1. **Enter a search term** in the search box
+2. **Click "AI Search"** (purple button next to the regular Search button)
+   - If no search has been performed yet, it will automatically search first
+3. **Review the System Prompt** in the dialog that appears
+   - The default prompt instructs the AI to output HTML-formatted results
+   - You can customize this prompt to change how the AI analyzes the results
+4. **Click "Analyze with AI"**
+5. **View the results** in the AI Analysis Result window
+   - Results are displayed with rich HTML formatting
+   - Use "Copy Response" to copy the raw response to clipboard
+
+### Default System Prompt
+
+The default system prompt is designed to produce well-formatted HTML output:
+
+```
+You are a helpful assistant. Analyze the following search results and provide a well-structured summary.
+
+IMPORTANT: Your response MUST be valid HTML. Use these HTML elements for formatting:
+- <h2> for main section headers
+- <h3> for sub-section headers
+- <p> for paragraphs
+- <ul> and <li> for bullet lists
+- <ol> and <li> for numbered lists
+- <strong> for bold/important text
+- <em> for italic/emphasized text
+- <code> for code or technical terms
+- <blockquote> for quotes or important notes
+- <table>, <tr>, <th>, <td> for tabular data
+
+Structure your response with clear sections. Highlight the most relevant information.
+Do NOT include <html>, <head>, or <body> tags - only the inner content.
+```
+
+### Customizing the Prompt
+
+You can modify the system prompt to change how the AI analyzes your results. Here are some examples:
+
+#### Summarization Prompt
+```
+Analyze the search results and create a brief executive summary (max 3 paragraphs).
+Output as HTML with <h2> for the title and <p> for paragraphs.
+Focus only on the most important findings.
+```
+
+#### Comparison Prompt
+```
+Compare and contrast the search results. Create an HTML table showing:
+- Key similarities
+- Key differences
+- Unique aspects of each result
+Use <table>, <tr>, <th>, <td> tags for the comparison table.
+```
+
+#### Action Items Prompt
+```
+Review the search results and extract actionable items.
+Format as an HTML ordered list (<ol>, <li>) with priority levels.
+Use <strong> to highlight high-priority items.
+```
+
+#### Technical Analysis Prompt
+```
+Analyze these search results from a technical perspective.
+Create an HTML report with:
+- <h2> for main sections
+- <code> for technical terms
+- <ul> for feature lists
+- <table> for specifications comparison
+```
+
+### Result Window
+
+The AI Analysis Result window displays:
+
+| Element | Description |
+|---------|-------------|
+| **Title** | "AI Analysis Result" |
+| **Model** | The AI model that generated the response |
+| **Response** | The formatted HTML response from the AI |
+| **Token Info** | Prompt tokens, completion tokens, and total tokens used |
+| **Copy Response** | Button to copy the raw response to clipboard |
+
+### Tips for Best Results
+
+1. **Be specific in your search**: The more relevant your search results, the better the AI analysis
+2. **Customize the prompt**: Tailor the system prompt to get the type of analysis you need
+3. **Use appropriate models**: GPT-4 produces better analysis than GPT-3.5-turbo but costs more
+4. **Keep result count reasonable**: Too many results may exceed token limits or produce less focused analysis
+5. **Review token usage**: Monitor token consumption to manage API costs
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| "No search results to analyze" | Perform a search first, or enter a search term before clicking AI Search |
+| "API Error" | Check your API endpoint, API key, and model settings |
+| Empty response | Verify the AI service is running and accessible |
+| Timeout | The AI may be taking too long; try with fewer search results |
+| Malformed output | The AI may not have followed HTML instructions; try adjusting the prompt |
+| Rate limit exceeded | Wait and try again, or upgrade your API plan |
+
+### Cost Considerations
+
+- **OpenAI**: Charges per token (input + output). GPT-4 is ~30x more expensive than GPT-3.5-turbo
+- **Azure OpenAI**: Similar pricing to OpenAI
+- **Ollama/LM Studio**: Free (runs locally on your hardware)
+
+Monitor your usage at:
+- OpenAI: [platform.openai.com/usage](https://platform.openai.com/usage)
+- Azure: Azure Portal cost management
 
 ---
 
@@ -1797,6 +1950,10 @@ public override async Task<IEnumerable<SearchResult>> SearchAsync(
     return results;
 }
 ```
+
+### AI Search Example
+
+For the AI Search feature, no additional code is needed in connectors. Just ensure your AI API is configured in settings.
 
 ---
 

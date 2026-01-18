@@ -382,5 +382,28 @@ public static class Strings_de
         ["Connector_FindInFiles_CopyPath_Desc"] = "Dateipfad in Zwischenablage kopieren",
         ["Connector_FindInFiles_CopyMatches"] = "Treffer kopieren",
         ["Connector_FindInFiles_CopyMatches_Desc"] = "Alle Treffer in Zwischenablage kopieren",
+
+        // === AI Search ===
+        ["AiSearch"] = "KI-Suche",
+        ["AiSearchTooltip"] = "Suchergebnisse mit KI analysieren",
+        ["AiSearchDescription"] = "Geben Sie einen System-Prompt ein, um die Suchergebnisse mit KI zu analysieren.",
+        ["AiSystemPrompt"] = "System-Prompt",
+        ["AiDefaultPrompt"] = "Du bist ein hilfreicher Assistent. Analysiere die folgenden Suchergebnisse und erstelle eine pr\u00e4gnante Zusammenfassung der wichtigsten Informationen.",
+        ["AiResultsToAnalyze"] = "{0} Ergebnisse werden analysiert",
+        ["AiAnalyzeButton"] = "Mit KI analysieren",
+        ["AiPromptRequired"] = "Bitte geben Sie einen System-Prompt ein.",
+        ["AiNoResults"] = "Keine Suchergebnisse zum Analysieren. Bitte f\u00fchren Sie zuerst eine Suche durch.",
+        ["AiAnalyzing"] = "Analysiere mit KI...",
+        ["AiAnalysisComplete"] = "KI-Analyse abgeschlossen",
+        ["AiAnalysisResult"] = "KI-Analyse Ergebnis",
+        ["AiCopyResponse"] = "Antwort kopieren",
+        ["AiResponseCopied"] = "Antwort in Zwischenablage kopiert.",
+        ["AiModel"] = "Modell",
+        ["AiPromptTokens"] = "Prompt",
+        ["AiCompletionTokens"] = "Antwort",
+        ["AiTotalTokens"] = "Gesamt",
+        ["AiApiEndpoint"] = "API-Endpunkt",
+        ["AiApiKey"] = "API-Schl\u00fcssel",
+        ["AiModelHint"] = "z.B. gpt-4, gpt-3.5-turbo, llama2",
     };
 }

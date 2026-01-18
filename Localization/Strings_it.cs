@@ -382,5 +382,28 @@ public static class Strings_it
         ["Connector_FindInFiles_CopyPath_Desc"] = "Copia percorso del file negli appunti",
         ["Connector_FindInFiles_CopyMatches"] = "Copia Corrispondenze",
         ["Connector_FindInFiles_CopyMatches_Desc"] = "Copia tutte le corrispondenze negli appunti",
+
+        // === AI Search ===
+        ["AiSearch"] = "Ricerca IA",
+        ["AiSearchTooltip"] = "Analizza i risultati con l'IA",
+        ["AiSearchDescription"] = "Inserisci un prompt di sistema per analizzare i risultati della ricerca con l'IA.",
+        ["AiSystemPrompt"] = "Prompt di Sistema",
+        ["AiDefaultPrompt"] = "Sei un assistente utile. Analizza i seguenti risultati di ricerca e fornisci un riepilogo conciso evidenziando le informazioni pi\u00f9 rilevanti.",
+        ["AiResultsToAnalyze"] = "{0} risultati saranno analizzati",
+        ["AiAnalyzeButton"] = "Analizza con IA",
+        ["AiPromptRequired"] = "Inserisci un prompt di sistema.",
+        ["AiNoResults"] = "Nessun risultato di ricerca da analizzare. Esegui prima una ricerca.",
+        ["AiAnalyzing"] = "Analisi con IA in corso...",
+        ["AiAnalysisComplete"] = "Analisi IA completata",
+        ["AiAnalysisResult"] = "Risultato dell'Analisi IA",
+        ["AiCopyResponse"] = "Copia Risposta",
+        ["AiResponseCopied"] = "Risposta copiata negli appunti.",
+        ["AiModel"] = "Modello",
+        ["AiPromptTokens"] = "Prompt",
+        ["AiCompletionTokens"] = "Risposta",
+        ["AiTotalTokens"] = "Totale",
+        ["AiApiEndpoint"] = "Endpoint API",
+        ["AiApiKey"] = "Chiave API",
+        ["AiModelHint"] = "es. gpt-4, gpt-3.5-turbo, llama2",
     };
 }

@@ -16,6 +16,11 @@ public class AppSettings
     public double WindowHeight { get; set; } = 700;
     public double WindowLeft { get; set; } = -1;
     public double WindowTop { get; set; } = -1;
+    
+    // AI Search Settings
+    public string AiApiEndpoint { get; set; } = "https://api.openai.com/v1/chat/completions";
+    public string AiApiKey { get; set; } = "";
+    public string AiModel { get; set; } = "gpt-3.5-turbo";
 }
 
 /// <summary>

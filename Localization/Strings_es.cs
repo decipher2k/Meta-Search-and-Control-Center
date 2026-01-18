@@ -382,5 +382,28 @@ public static class Strings_es
         ["Connector_FindInFiles_CopyPath_Desc"] = "Copiar ruta del archivo al portapapeles",
         ["Connector_FindInFiles_CopyMatches"] = "Copiar Coincidencias",
         ["Connector_FindInFiles_CopyMatches_Desc"] = "Copiar todas las coincidencias al portapapeles",
+
+        // === AI Search ===
+        ["AiSearch"] = "B\u00fasqueda IA",
+        ["AiSearchTooltip"] = "Analizar resultados con IA",
+        ["AiSearchDescription"] = "Introduzca un prompt del sistema para analizar los resultados de b\u00fasqueda con IA.",
+        ["AiSystemPrompt"] = "Prompt del Sistema",
+        ["AiDefaultPrompt"] = "Eres un asistente \u00fatil. Analiza los siguientes resultados de b\u00fasqueda y proporciona un resumen conciso destacando la informaci\u00f3n m\u00e1s relevante.",
+        ["AiResultsToAnalyze"] = "{0} resultados ser\u00e1n analizados",
+        ["AiAnalyzeButton"] = "Analizar con IA",
+        ["AiPromptRequired"] = "Por favor, introduzca un prompt del sistema.",
+        ["AiNoResults"] = "No hay resultados de b\u00fasqueda para analizar. Por favor, realice primero una b\u00fasqueda.",
+        ["AiAnalyzing"] = "Analizando con IA...",
+        ["AiAnalysisComplete"] = "An\u00e1lisis de IA completado",
+        ["AiAnalysisResult"] = "Resultado del An\u00e1lisis IA",
+        ["AiCopyResponse"] = "Copiar Respuesta",
+        ["AiResponseCopied"] = "Respuesta copiada al portapapeles.",
+        ["AiModel"] = "Modelo",
+        ["AiPromptTokens"] = "Prompt",
+        ["AiCompletionTokens"] = "Respuesta",
+        ["AiTotalTokens"] = "Total",
+        ["AiApiEndpoint"] = "Endpoint de API",
+        ["AiApiKey"] = "Clave de API",
+        ["AiModelHint"] = "ej. gpt-4, gpt-3.5-turbo, llama2",
     };
 }

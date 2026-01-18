@@ -470,4 +470,9 @@ public class Strings : INotifyPropertyChanged
     public string Connector_FindInFiles_CopyPath_Desc => GetString("Connector_FindInFiles_CopyPath_Desc");
     public string Connector_FindInFiles_CopyMatches => GetString("Connector_FindInFiles_CopyMatches");
     public string Connector_FindInFiles_CopyMatches_Desc => GetString("Connector_FindInFiles_CopyMatches_Desc");
+
+    /// <summary>
+    /// Indexer for dynamic string access by key.
+    /// </summary>
+    public string this[string key] => GetString(key);
 }

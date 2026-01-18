@@ -46,6 +46,13 @@ public partial class SettingsDialog : Window
         AppearanceHeader.Text = loc.Appearance;
         CancelBtn.Content = loc.Cancel;
         SaveBtn.Content = loc.Save;
+        
+        // AI Search localization
+        AiSearchHeader.Text = loc["AiSearch"];
+        AiApiEndpointLabel.Text = loc["AiApiEndpoint"];
+        AiApiKeyLabel.Text = loc["AiApiKey"];
+        AiModelLabel.Text = loc["AiModel"];
+        AiModelHint.Text = loc["AiModelHint"];
     }
 
     private void LoadSettings()
@@ -60,6 +67,11 @@ public partial class SettingsDialog : Window
         // Andere Einstellungen
         StartMaximizedCheckBox.IsChecked = _settingsService.Settings.StartMaximized;
         RememberPositionCheckBox.IsChecked = _settingsService.Settings.RememberWindowPosition;
+        
+        // AI Search Einstellungen
+        AiApiEndpointTextBox.Text = _settingsService.Settings.AiApiEndpoint;
+        AiApiKeyPasswordBox.Password = _settingsService.Settings.AiApiKey;
+        AiModelTextBox.Text = _settingsService.Settings.AiModel;
     }
 
     private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -85,6 +97,11 @@ public partial class SettingsDialog : Window
         // Andere Einstellungen speichern
         _settingsService.Settings.StartMaximized = StartMaximizedCheckBox.IsChecked ?? false;
         _settingsService.Settings.RememberWindowPosition = RememberPositionCheckBox.IsChecked ?? true;
+        
+        // AI Search Einstellungen speichern
+        _settingsService.Settings.AiApiEndpoint = AiApiEndpointTextBox.Text.Trim();
+        _settingsService.Settings.AiApiKey = AiApiKeyPasswordBox.Password;
+        _settingsService.Settings.AiModel = AiModelTextBox.Text.Trim();
         
         _settingsService.Save();
         

@@ -176,6 +176,8 @@ namespace MSCC
             
             // Search
             SearchButton.Content = loc.Search;
+            AiSearchButton.Content = loc["AiSearch"];
+            AiSearchButton.ToolTip = loc["AiSearchTooltip"];
             CancelSearchButton.Content = loc.Cancel;
             
             // Headers
@@ -298,6 +300,70 @@ namespace MSCC
             {
                 _viewModel.RefreshDataSources();
                 _viewModel.StatusMessage = Strings.Format("GroupUpdated", group.Name);
+            }
+        }
+        
+        private async void AiSearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            // First, execute normal search if search term is provided but no results yet
+            if (!string.IsNullOrWhiteSpace(_viewModel.SearchTerm) && _viewModel.SearchResults.Count == 0)
+            {
+                if (_viewModel.SearchCommand.CanExecute(null))
+                {
+                    _viewModel.SearchCommand.Execute(null);
+                    
+                    // Wait for search to complete
+                    while (_viewModel.IsSearching)
+                    {
+                        await Task.Delay(100);
+                    }
+                }
+            }
+            
+            var results = _viewModel.SearchResults.Select(r => r.Result).ToList();
+            
+            if (results.Count == 0)
+            {
+                MessageBox.Show(
+                    Strings.Instance["AiNoResults"],
+                    Strings.Instance.Warning,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+            
+            // Show prompt dialog
+            var promptDialog = new AiSearchPromptDialog(results.Count) { Owner = this };
+            if (promptDialog.ShowDialog() != true)
+                return;
+            
+            // Show loading status
+            _viewModel.StatusMessage = Strings.Instance["AiAnalyzing"];
+            
+            try
+            {
+                var aiService = new AiSearchService();
+                var response = await aiService.AnalyzeResultsAsync(
+                    results,
+                    promptDialog.SystemPrompt,
+                    _viewModel.SearchTerm);
+                
+                // Show result window
+                var resultWindow = new AiSearchResultWindow(response) { Owner = this };
+                resultWindow.ShowDialog();
+                
+                _viewModel.StatusMessage = response.Success 
+                    ? Strings.Instance["AiAnalysisComplete"]
+                    : Strings.Instance.Error;
+            }
+            catch (Exception ex)
+            {
+                _viewModel.StatusMessage = $"{Strings.Instance.Error}: {ex.Message}";
+                MessageBox.Show(
+                    ex.Message,
+                    Strings.Instance.Error,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
     }

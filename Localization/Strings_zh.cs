@@ -382,5 +382,28 @@ public static class Strings_zh
         ["Connector_FindInFiles_CopyPath_Desc"] = "\u5c06\u6587\u4ef6\u8def\u5f84\u590d\u5236\u5230\u526a\u8d34\u677f",
         ["Connector_FindInFiles_CopyMatches"] = "\u590d\u5236\u5339\u914d",
         ["Connector_FindInFiles_CopyMatches_Desc"] = "\u5c06\u6240\u6709\u5339\u914d\u590d\u5236\u5230\u526a\u8d34\u677f",
+
+        // === AI Search ===
+        ["AiSearch"] = "AI\u641c\u7d22",
+        ["AiSearchTooltip"] = "\u7528AI\u5206\u6790\u7ed3\u679c",
+        ["AiSearchDescription"] = "\u8f93\u5165\u7cfb\u7edf\u63d0\u793a\u8bcd\uff0c\u4f7f\u7528AI\u5206\u6790\u641c\u7d22\u7ed3\u679c\u3002",
+        ["AiSystemPrompt"] = "\u7cfb\u7ed3\u63d0\u793a\u8bcd",
+        ["AiDefaultPrompt"] = "\u4f60\u662f\u4e00\u4e2a\u6709\u7528\u7684\u52a9\u624b\u3002\u5206\u6790\u4ee5\u4e0b\u641c\u7d22\u7ed3\u679c\uff0c\u5e76\u63d0\u4f9b\u7b80\u660e\u7684\u6458\u8981\uff0c\u7a81\u51fa\u6700\u76f8\u5173\u7684\u4fe1\u606f\u3002",
+        ["AiResultsToAnalyze"] = "\u5c06\u5206\u6790 {0} \u4e2a\u7ed3\u679c",
+        ["AiAnalyzeButton"] = "\u7528AI\u5206\u6790",
+        ["AiPromptRequired"] = "\u8bf7\u8f93\u5165\u7cfb\u7edf\u63d0\u793a\u8bcd\u3002",
+        ["AiNoResults"] = "\u6ca1\u6709\u53ef\u5206\u6790\u7684\u641c\u7d22\u7ed3\u679c\u3002\u8bf7\u5148\u8fdb\u884c\u641c\u7d22\u3002",
+        ["AiAnalyzing"] = "\u6b63\u5728\u7528AI\u5206\u6790...",
+        ["AiAnalysisComplete"] = "AI\u5206\u6790\u5b8c\u6210",
+        ["AiAnalysisResult"] = "AI\u5206\u6790\u7ed3\u679c",
+        ["AiCopyResponse"] = "\u590d\u5236\u54cd\u5e94",
+        ["AiResponseCopied"] = "\u54cd\u5e94\u5df2\u590d\u5236\u5230\u526a\u8d34\u677f\u3002",
+        ["AiModel"] = "\u6a21\u578b",
+        ["AiPromptTokens"] = "\u63d0\u793a",
+        ["AiCompletionTokens"] = "\u54cd\u5e94",
+        ["AiTotalTokens"] = "\u603b\u8ba1",
+        ["AiApiEndpoint"] = "API\u7aef\u70b9",
+        ["AiApiKey"] = "API\u5bc6\u94a5",
+        ["AiModelHint"] = "\u4f8b\u5982: gpt-4, gpt-3.5-turbo, llama2",
     };
 }
