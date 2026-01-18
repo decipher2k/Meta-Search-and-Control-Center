@@ -8,6 +8,8 @@ An extensible meta search engine for Windows that can search multiple data sourc
 - [Installation](#installation)
 - [User Interface](#user-interface)
 - [Connectors and Data Sources](#connectors-and-data-sources)
+  - [File System Connector](#file-system-connector)
+  - [Find In Files Connector](#find-in-files-connector)
   - [Microsoft 365 Connector](#microsoft-365-connector)
   - [SQL Database Connector](#sql-database-connector)
   - [DuckDuckGo Web Search Connector](#duckduckgo-web-search-connector)
@@ -37,6 +39,7 @@ An extensible meta search engine for Windows that can search multiple data sourc
 | Connector | Description |
 |-----------|-------------|
 | **File System** | Searches local files and folders by filename |
+| **Find In Files** | Searches for text content inside files with regex support |
 | **Microsoft 365** | Searches Calendar, ToDo, Emails, and OneNote via Microsoft Graph API |
 | **DuckDuckGo** | Performs web searches using DuckDuckGo |
 | **SQL Database** | Searches SQL databases (MySQL, MSSQL, PostgreSQL) |
@@ -98,6 +101,229 @@ The main window is divided into three areas:
 - **Data Source**: A concrete instance of a connector with specific configuration
 
 Example: The file system connector can create multiple data sources - one for "Documents", one for "Downloads", etc.
+
+---
+
+### File System Connector
+
+The File System Connector allows you to search for files and folders by their names in your local file system.
+
+#### Features
+
+- **Fast filename search**: Quickly find files by name pattern
+- **Wildcard support**: Use patterns like `*.txt`, `*.pdf`, `report*`
+- **Recursive search**: Optionally include subdirectories
+- **File metadata**: View size, dates, and file type information
+
+#### Configuration
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| **Base Path** | Yes | - | The folder path to search in |
+| **Search Pattern** | No | `*.*` | File pattern filter (e.g., `*.txt`, `*.pdf`) |
+| **Include Subdirectories** | No | true | Whether to search in subdirectories |
+
+#### Search Results
+
+Each search result includes:
+
+| Field | Description |
+|-------|-------------|
+| **Title** | The file or folder name |
+| **Description** | Full path to the file |
+| **Path** | Complete file path |
+| **Size** | File size in bytes |
+| **Created** | Creation date |
+| **Modified** | Last modification date |
+| **Type** | File extension or "Folder" |
+
+#### Available Actions
+
+| Action | Description |
+|--------|-------------|
+| **Open** | Opens the file with the default application |
+| **Open Folder** | Opens the containing folder in Explorer |
+| **Copy Path** | Copies the full file path to clipboard |
+
+#### Example Usage
+
+1. Click **+** next to "Data Sources"
+2. Select **File System** as the connector
+3. Enter a name (e.g., "Documents")
+4. Configure:
+   - **Base Path**: `C:\Users\YourName\Documents`
+   - **Search Pattern**: `*.*` (all files) or `*.pdf` (only PDFs)
+   - **Include Subdirectories**: true
+5. Click **Save**
+6. Enable the data source and start searching!
+
+---
+
+### Find In Files Connector
+
+The Find In Files Connector allows you to search for text content inside files. Unlike the File System Connector which searches by filename, this connector reads file contents and finds matching text, similar to "grep" on Linux or "Find in Files" in text editors.
+
+#### Features
+
+- **Full-text search**: Search inside file contents, not just filenames
+- **Regular expression support**: Use regex patterns for advanced searches
+- **Case sensitivity option**: Choose between case-sensitive or case-insensitive search
+- **Multiple file types**: Search in text files, source code, logs, and more
+- **Match context**: See the line and column where matches were found
+- **Match highlighting**: View all matches with their surrounding context
+
+#### Configuration
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| **Base Path** | Yes | - | The folder path to search in |
+| **File Pattern** | No | `*.*` | File pattern filter (e.g., `*.txt`, `*.cs`, `*.log`) |
+| **Include Subdirectories** | No | true | Whether to search in subdirectories |
+| **Use Regular Expressions** | No | false | Enable regex pattern matching |
+| **Case Sensitive** | No | false | Enable case-sensitive matching |
+
+#### Search Modes
+
+**1. Plain Text Search (Default)**
+
+When "Use Regular Expressions" is disabled, the connector performs a simple text search:
+- Searches for the exact text you enter
+- Case sensitivity depends on the "Case Sensitive" setting
+- Fast and straightforward
+
+**Example**: Searching for `TODO` will find all occurrences of "TODO" in files.
+
+**2. Regular Expression Search**
+
+When "Use Regular Expressions" is enabled, you can use regex patterns:
+
+| Pattern | Description | Example Match |
+|---------|-------------|---------------|
+| `\bword\b` | Whole word only | "word" but not "keyword" |
+| `error\|warning` | Either pattern | "error" or "warning" |
+| `\d{4}-\d{2}-\d{2}` | Date pattern | "2024-01-15" |
+| `TODO:.*` | TODO with text | "TODO: fix this bug" |
+| `^import\s+` | Line starting with import | "import System;" |
+| `\.(jpg\|png\|gif)$` | Image extensions | ".jpg", ".png" |
+
+#### Search Results
+
+Each search result represents a file with matches:
+
+| Field | Description |
+|-------|-------------|
+| **Title** | Filename with match count |
+| **Description** | First few matches with line numbers |
+| **Path** | Full file path |
+| **Directory** | Parent directory |
+| **File Name** | Just the filename |
+| **Size** | File size |
+| **Modified** | Last modification date |
+| **Match Count** | Total number of matches in the file |
+| **Matches** | Detailed list of all matches with line/column |
+
+#### Match Details
+
+For each match found, the connector provides:
+
+| Field | Description |
+|-------|-------------|
+| **Line** | Line number (1-based) |
+| **Column** | Column position (1-based) |
+| **Text** | The matched text |
+| **Context** | The full line containing the match |
+
+#### Available Actions
+
+| Action | Description |
+|--------|-------------|
+| **Open** | Opens the file with the default application |
+| **Open Folder** | Opens the containing folder in Explorer |
+| **Copy Path** | Copies the full file path to clipboard |
+| **Copy Matches** | Copies all matches with line numbers to clipboard |
+
+#### Example Usage
+
+##### Example 1: Find TODO Comments in Source Code
+
+1. Click **+** next to "Data Sources"
+2. Select **Find In Files** as the connector
+3. Enter a name (e.g., "TODO Finder")
+4. Configure:
+   - **Base Path**: `C:\Projects\MyProject`
+   - **File Pattern**: `*.cs` (C# files only)
+   - **Include Subdirectories**: true
+   - **Use Regular Expressions**: false
+   - **Case Sensitive**: false
+5. Click **Save**
+6. Search for: `TODO`
+
+##### Example 2: Find Error Messages in Log Files
+
+1. Create a new data source named "Log Search"
+2. Configure:
+   - **Base Path**: `C:\Logs`
+   - **File Pattern**: `*.log`
+   - **Include Subdirectories**: true
+   - **Use Regular Expressions**: true
+   - **Case Sensitive**: false
+3. Search for: `error|exception|failed`
+
+##### Example 3: Find IP Addresses
+
+1. Enable regex mode
+2. Search for: `\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b`
+
+##### Example 4: Find Email Addresses
+
+1. Enable regex mode
+2. Search for: `[\w.+-]+@[\w-]+\.[\w.-]+`
+
+#### Supported File Types
+
+The connector can search in any text-based file format:
+
+| Category | Extensions |
+|----------|------------|
+| **Source Code** | `.cs`, `.js`, `.ts`, `.py`, `.java`, `.cpp`, `.c`, `.h` |
+| **Web Files** | `.html`, `.css`, `.xml`, `.json`, `.yaml`, `.yml` |
+| **Documents** | `.txt`, `.md`, `.rst`, `.csv` |
+| **Config Files** | `.config`, `.ini`, `.env`, `.properties` |
+| **Log Files** | `.log`, `.trace` |
+| **Scripts** | `.ps1`, `.sh`, `.bat`, `.cmd` |
+
+> **Note**: Binary files (images, executables, etc.) are automatically skipped.
+
+#### Performance Tips
+
+1. **Narrow your file pattern**: Use specific patterns like `*.cs` instead of `*.*`
+2. **Limit the base path**: Search in specific folders rather than entire drives
+3. **Disable subdirectories**: If you only need to search the top-level folder
+4. **Use simpler regex**: Complex regex patterns are slower than plain text
+5. **Consider file size**: Very large files take longer to search
+
+#### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| No results found | Check that files exist and match the file pattern |
+| Search is slow | Narrow the base path or file pattern |
+| Regex not working | Verify your regex syntax; test with simple patterns first |
+| Encoding issues | The connector uses automatic encoding detection |
+| Access denied | Check folder permissions |
+| Out of memory | Reduce the number of files by using a more specific file pattern |
+
+#### Comparison: File System vs Find In Files
+
+| Feature | File System | Find In Files |
+|---------|-------------|---------------|
+| Search by filename | ? | ? |
+| Search file contents | ? | ? |
+| Regex support | ? | ? |
+| Case sensitivity option | ? | ? |
+| Match highlighting | ? | ? |
+| Speed | Faster | Slower (reads file contents) |
+| Use case | Find files by name | Find text in files |
 
 ---
 

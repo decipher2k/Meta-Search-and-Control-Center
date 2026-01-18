@@ -433,4 +433,41 @@ public class Strings : INotifyPropertyChanged
     public string ImapActionCopyBodyDesc => GetString("ImapActionCopyBodyDesc");
     public string ImapActionCopySender => GetString("ImapActionCopySender");
     public string ImapActionCopySenderDesc => GetString("ImapActionCopySenderDesc");
+
+    // === Connector: Find In Files ===
+    public string Connector_FindInFiles_Name => GetString("Connector_FindInFiles_Name");
+    public string Connector_FindInFiles_Description => GetString("Connector_FindInFiles_Description");
+    public string Connector_FindInFiles_BasePath => GetString("Connector_FindInFiles_BasePath");
+    public string Connector_FindInFiles_BasePath_Desc => GetString("Connector_FindInFiles_BasePath_Desc");
+    public string Connector_FindInFiles_FilePattern => GetString("Connector_FindInFiles_FilePattern");
+    public string Connector_FindInFiles_FilePattern_Desc => GetString("Connector_FindInFiles_FilePattern_Desc");
+    public string Connector_FindInFiles_IncludeSubdirs => GetString("Connector_FindInFiles_IncludeSubdirs");
+    public string Connector_FindInFiles_IncludeSubdirs_Desc => GetString("Connector_FindInFiles_IncludeSubdirs_Desc");
+    public string Connector_FindInFiles_UseRegex => GetString("Connector_FindInFiles_UseRegex");
+    public string Connector_FindInFiles_UseRegex_Desc => GetString("Connector_FindInFiles_UseRegex_Desc");
+    public string Connector_FindInFiles_CaseSensitive => GetString("Connector_FindInFiles_CaseSensitive");
+    public string Connector_FindInFiles_CaseSensitive_Desc => GetString("Connector_FindInFiles_CaseSensitive_Desc");
+    public string Connector_FindInFiles_MatchesFound => GetString("Connector_FindInFiles_MatchesFound");
+    public string Connector_FindInFiles_Path => GetString("Connector_FindInFiles_Path");
+    public string Connector_FindInFiles_Directory => GetString("Connector_FindInFiles_Directory");
+    public string Connector_FindInFiles_FileName => GetString("Connector_FindInFiles_FileName");
+    public string Connector_FindInFiles_Size => GetString("Connector_FindInFiles_Size");
+    public string Connector_FindInFiles_Modified => GetString("Connector_FindInFiles_Modified");
+    public string Connector_FindInFiles_MatchCount => GetString("Connector_FindInFiles_MatchCount");
+    public string Connector_FindInFiles_Matches => GetString("Connector_FindInFiles_Matches");
+    public string Connector_FindInFiles_SearchTerm => GetString("Connector_FindInFiles_SearchTerm");
+    public string Connector_FindInFiles_Line => GetString("Connector_FindInFiles_Line");
+    public string Connector_FindInFiles_Column => GetString("Connector_FindInFiles_Column");
+    public string Connector_FindInFiles_FileInfo => GetString("Connector_FindInFiles_FileInfo");
+    public string Connector_FindInFiles_MatchesHeader => GetString("Connector_FindInFiles_MatchesHeader");
+    public string Connector_FindInFiles_AndMore => GetString("Connector_FindInFiles_AndMore");
+    public string Connector_FindInFiles_MoreMatches => GetString("Connector_FindInFiles_MoreMatches");
+    public string Connector_FindInFiles_Open => GetString("Connector_FindInFiles_Open");
+    public string Connector_FindInFiles_Open_Desc => GetString("Connector_FindInFiles_Open_Desc");
+    public string Connector_FindInFiles_OpenFolder => GetString("Connector_FindInFiles_OpenFolder");
+    public string Connector_FindInFiles_OpenFolder_Desc => GetString("Connector_FindInFiles_OpenFolder_Desc");
+    public string Connector_FindInFiles_CopyPath => GetString("Connector_FindInFiles_CopyPath");
+    public string Connector_FindInFiles_CopyPath_Desc => GetString("Connector_FindInFiles_CopyPath_Desc");
+    public string Connector_FindInFiles_CopyMatches => GetString("Connector_FindInFiles_CopyMatches");
+    public string Connector_FindInFiles_CopyMatches_Desc => GetString("Connector_FindInFiles_CopyMatches_Desc");
 }

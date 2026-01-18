@@ -222,6 +222,7 @@ public class DataSourceManager
     public void RegisterDefaultConnectors()
     {
         RegisterConnector(new FileSystemConnector());
+        RegisterConnector(new FindInFilesConnector());
         RegisterConnector(new MockDatabaseConnector());
         RegisterConnector(new MicrosoftGraphConnector());
         RegisterConnector(new DuckDuckGoConnector());
@@ -276,6 +277,9 @@ public class DataSourceManager
         // Bekannte Konnektoren
         if (template is FileSystemConnector)
             return new FileSystemConnector();
+        
+        if (template is FindInFilesConnector)
+            return new FindInFilesConnector();
         
         if (template is MockDatabaseConnector)
             return new MockDatabaseConnector();
