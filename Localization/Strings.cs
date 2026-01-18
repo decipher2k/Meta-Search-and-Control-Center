@@ -396,4 +396,41 @@ public class Strings : INotifyPropertyChanged
     public string GenericApiActionCopyJsonDesc => GetString("GenericApiActionCopyJsonDesc");
     public string GenericApiActionCopyUrl => GetString("GenericApiActionCopyUrl");
     public string GenericApiActionCopyUrlDesc => GetString("GenericApiActionCopyUrlDesc");
+
+    // === Connector: IMAP ===
+    public string ImapConnectorName => GetString("ImapConnectorName");
+    public string ImapConnectorDescription => GetString("ImapConnectorDescription");
+    public string ImapServer => GetString("ImapServer");
+    public string ImapServerDesc => GetString("ImapServerDesc");
+    public string ImapPort => GetString("ImapPort");
+    public string ImapPortDesc => GetString("ImapPortDesc");
+    public string ImapEmailAddress => GetString("ImapEmailAddress");
+    public string ImapEmailAddressDesc => GetString("ImapEmailAddressDesc");
+    public string ImapAuthType => GetString("ImapAuthType");
+    public string ImapAuthTypeDesc => GetString("ImapAuthTypeDesc");
+    public string ImapPassword => GetString("ImapPassword");
+    public string ImapPasswordDesc => GetString("ImapPasswordDesc");
+    public string ImapOAuth2Token => GetString("ImapOAuth2Token");
+    public string ImapOAuth2TokenDesc => GetString("ImapOAuth2TokenDesc");
+    public string ImapEncryption => GetString("ImapEncryption");
+    public string ImapEncryptionDesc => GetString("ImapEncryptionDesc");
+    public string ImapFolderName => GetString("ImapFolderName");
+    public string ImapFolderNameDesc => GetString("ImapFolderNameDesc");
+    public string ImapMaxResults => GetString("ImapMaxResults");
+    public string ImapMaxResultsDesc => GetString("ImapMaxResultsDesc");
+    public string ImapMaxDaysBack => GetString("ImapMaxDaysBack");
+    public string ImapMaxDaysBackDesc => GetString("ImapMaxDaysBackDesc");
+    public string ImapNoSubject => GetString("ImapNoSubject");
+    public string ImapError => GetString("ImapError");
+    public string ImapErrorDesc => GetString("ImapErrorDesc");
+    public string ImapMetaFrom => GetString("ImapMetaFrom");
+    public string ImapMetaFromEmail => GetString("ImapMetaFromEmail");
+    public string ImapMetaSubject => GetString("ImapMetaSubject");
+    public string ImapMetaDate => GetString("ImapMetaDate");
+    public string ImapMetaHasAttachments => GetString("ImapMetaHasAttachments");
+    public string ImapMetaFolder => GetString("ImapMetaFolder");
+    public string ImapActionCopyBody => GetString("ImapActionCopyBody");
+    public string ImapActionCopyBodyDesc => GetString("ImapActionCopyBodyDesc");
+    public string ImapActionCopySender => GetString("ImapActionCopySender");
+    public string ImapActionCopySenderDesc => GetString("ImapActionCopySenderDesc");
 }

@@ -227,6 +227,7 @@ public class DataSourceManager
         RegisterConnector(new DuckDuckGoConnector());
         RegisterConnector(new SqlDatabaseConnector());
         RegisterConnector(new OpenAiConnector());
+        RegisterConnector(new ImapConnector());
     }
 
     /// <summary>
@@ -290,6 +291,9 @@ public class DataSourceManager
         
         if (template is OpenAiConnector)
             return new OpenAiConnector();
+        
+        if (template is ImapConnector)
+            return new ImapConnector();
         
         // Gescriptete Konnektoren - versuche neue Instanz über Reflection zu erstellen
         if (template is ScriptedConnectorBase)

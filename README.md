@@ -13,6 +13,7 @@ An extensible meta search engine for Windows that can search multiple data sourc
   - [DuckDuckGo Web Search Connector](#duckduckgo-web-search-connector)
   - [OpenAI Connector](#openai-connector)
   - [Generic API Connector](#generic-api-connector)
+  - [IMAP Email Connector](#imap-email-connector)
 - [Plugin Development](#plugin-development)
   - [Option 1: Script-based Plugins](#option-1-script-based-plugins)
   - [Option 2: Compiled Plugins (Visual Studio)](#option-2-compiled-plugins-visual-studio)
@@ -41,6 +42,7 @@ An extensible meta search engine for Windows that can search multiple data sourc
 | **SQL Database** | Searches SQL databases (MySQL, MSSQL, PostgreSQL) |
 | **OpenAI API** | Queries OpenAI-compatible AI APIs (ChatGPT, local LLMs) |
 | **Generic API** | Connects to any REST API with flexible authentication |
+| **IMAP Email** | Searches emails via IMAP (Gmail, Outlook, Yahoo, private servers) |
 | **Mock Database** | Demo connector for testing purposes |
 
 ---
@@ -731,6 +733,195 @@ The `Result JSON Path` parameter supports:
 3. **Start simple**: Begin with minimal configuration and add complexity as needed
 4. **Use browser dev tools**: Inspect network requests if the API is used by a web app
 5. **Handle pagination**: If the API returns paginated results, set appropriate limit parameters
+
+---
+
+### IMAP Email Connector
+
+The IMAP Connector allows you to search emails from any IMAP-compatible email server. It supports both password authentication and OAuth2, making it compatible with Gmail, Outlook.com, Yahoo Mail, and private email servers.
+
+#### Features
+
+- **Universal IMAP Support**: Works with any IMAP server (Gmail, Outlook, Yahoo, private servers)
+- **Multiple Authentication Methods**: Password or OAuth2 authentication
+- **Flexible Encryption**: SSL/TLS, STARTTLS, or no encryption
+- **Folder Selection**: Search in any mail folder (INBOX, Sent, Archive, custom folders)
+- **Date Filtering**: Limit search to recent emails
+- **Full-Text Search**: Searches subject, body, and sender
+
+#### Prerequisites
+
+**For Password Authentication:**
+- Your email address and password
+- For Gmail: Enable "Less secure app access" or create an App Password
+- For Outlook.com: Create an App Password if 2FA is enabled
+
+**For OAuth2 Authentication:**
+- A valid OAuth2 access token for your email provider
+- The token must have IMAP access scope
+
+#### Common IMAP Server Settings
+
+| Provider | Server | Port | Encryption |
+|----------|--------|------|------------|
+| **Gmail** | `imap.gmail.com` | 993 | SslTls |
+| **Outlook.com / Hotmail** | `outlook.office365.com` | 993 | SslTls |
+| **Yahoo Mail** | `imap.mail.yahoo.com` | 993 | SslTls |
+| **iCloud** | `imap.mail.me.com` | 993 | SslTls |
+| **AOL** | `imap.aol.com` | 993 | SslTls |
+| **Zoho Mail** | `imap.zoho.com` | 993 | SslTls |
+| **GMX** | `imap.gmx.net` | 993 | SslTls |
+| **Private Server** | Your server hostname | 993 or 143 | Varies |
+
+#### Configuration
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| **IMAP Server** | Yes | `imap.gmail.com` | The IMAP server hostname |
+| **Port** | Yes | 993 | IMAP port (993 for SSL/TLS, 143 for STARTTLS) |
+| **Email Address** | Yes | - | Your email address for authentication |
+| **Auth Type** | Yes | Password | Authentication method: `Password` or `OAuth2` |
+| **Password** | No | - | Your password or app password (for Password auth) |
+| **OAuth2 Access Token** | No | - | OAuth2 access token (for OAuth2 auth) |
+| **Encryption** | Yes | SslTls | Encryption method: `SslTls`, `StartTls`, or `None` |
+| **Folder Name** | No | INBOX | Mail folder to search (e.g., `INBOX`, `Sent`, `[Gmail]/All Mail`) |
+| **Max Results** | No | 50 | Maximum number of emails to return (1-500) |
+| **Max Days Back** | No | 30 | How many days back to search (1-365) |
+
+#### Gmail Setup
+
+To use this connector with Gmail, you need to enable IMAP and create an App Password:
+
+1. **Enable IMAP in Gmail**:
+   - Go to Gmail Settings ? See all settings ? Forwarding and POP/IMAP
+   - Under "IMAP access", select "Enable IMAP"
+   - Click "Save Changes"
+
+2. **Create an App Password** (required if 2FA is enabled):
+   - Go to [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+   - Sign in to your Google account
+   - Select "Mail" and "Windows Computer" (or other)
+   - Click "Generate"
+   - Copy the 16-character password
+
+3. **Configure the connector**:
+   - Server: `imap.gmail.com`
+   - Port: `993`
+   - Email Address: Your Gmail address
+   - Auth Type: `Password`
+   - Password: Your App Password (not your regular password)
+   - Encryption: `SslTls`
+
+#### Outlook.com / Hotmail Setup
+
+1. **Enable IMAP** (usually enabled by default):
+   - Go to Outlook.com ? Settings ? View all Outlook settings
+   - Mail ? Sync email ? POP and IMAP
+   - Ensure "Let devices and apps use IMAP" is set to Yes
+
+2. **Create an App Password** (if 2FA is enabled):
+   - Go to [https://account.microsoft.com/security](https://account.microsoft.com/security)
+   - Select "Advanced security options"
+   - Under "App passwords", click "Create a new app password"
+   - Copy the generated password
+
+3. **Configure the connector**:
+   - Server: `outlook.office365.com`
+   - Port: `993`
+   - Email Address: Your Outlook.com address
+   - Auth Type: `Password`
+   - Password: Your App Password
+   - Encryption: `SslTls`
+
+#### Search Capabilities
+
+The connector searches across:
+
+| Field | Description |
+|-------|-------------|
+| **Subject** | Email subject line |
+| **Body** | Email body content (text and HTML) |
+| **Sender** | Sender's name and email address |
+
+#### Search Results
+
+Each search result includes:
+
+| Field | Description |
+|-------|-------------|
+| **Title** | Email subject |
+| **Description** | Sender name and body preview |
+| **From** | Sender's display name |
+| **From (Email)** | Sender's email address |
+| **Date** | When the email was received |
+| **Attachments** | Whether the email has attachments |
+| **Folder** | The mail folder where the email is located |
+
+#### Available Actions
+
+| Action | Description |
+|--------|-------------|
+| **Copy Body** | Copies the full email body to clipboard |
+| **Copy Sender** | Copies the sender's email address to clipboard |
+
+#### Example Usage
+
+1. Click **+** next to "Data Sources"
+2. Select **IMAP Email** as the connector
+3. Enter a name (e.g., "Gmail" or "Work Email")
+4. Configure:
+   - **IMAP Server**: `imap.gmail.com`
+   - **Port**: `993`
+   - **Email Address**: `your.email@gmail.com`
+   - **Auth Type**: `Password`
+   - **Password**: Your App Password
+   - **Encryption**: `SslTls`
+   - **Folder Name**: `INBOX`
+   - **Max Results**: `50`
+   - **Max Days Back**: `30`
+5. Click **Save**
+6. Enable the data source and start searching!
+
+#### Special Folder Names
+
+Different email providers use different folder naming conventions:
+
+| Provider | Sent | Trash | Drafts | All Mail |
+|----------|------|-------|--------|----------|
+| **Gmail** | `[Gmail]/Sent Mail` | `[Gmail]/Trash` | `[Gmail]/Drafts` | `[Gmail]/All Mail` |
+| **Outlook.com** | `Sent` | `Deleted` | `Drafts` | - |
+| **Yahoo** | `Sent` | `Trash` | `Draft` | - |
+| **Generic** | `Sent` | `Trash` | `Drafts` | - |
+
+#### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| "Authentication failed" | Check email/password, or create an App Password if 2FA is enabled |
+| "Connection refused" | Verify server hostname and port; check firewall settings |
+| "Certificate error" | Try changing encryption method; some servers use StartTls on port 143 |
+| "Login failed for Gmail" | Create an App Password at [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) |
+| "Folder not found" | Check folder name spelling; use full path for Gmail folders (e.g., `[Gmail]/Sent Mail`) |
+| No results | Increase "Max Days Back" or check if the folder contains emails |
+| Slow searches | Reduce "Max Days Back" and "Max Results" for faster searches |
+
+#### Security Considerations
+
+- **Passwords are stored locally** in the application settings file
+- Use **App Passwords** instead of your main account password when available
+- Consider using **OAuth2** for enhanced security (requires external token management)
+- Connection uses **encrypted TLS** by default
+- The connector only **reads** emails - it cannot modify or delete them
+
+#### OAuth2 Authentication
+
+For OAuth2 authentication, you need to obtain an access token from your email provider. This typically involves:
+
+1. Registering an application with your email provider
+2. Implementing the OAuth2 flow to obtain tokens
+3. Providing the access token to the connector
+
+**Note**: OAuth2 tokens typically expire after 1 hour. You'll need to refresh them periodically.
 
 ---
 
