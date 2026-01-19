@@ -284,7 +284,7 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
             var columns = await GetTableColumnsAsync(connection, tableName, ct);
             if (columns.Count == 0) return results;
 
-            var whereClause = BuildSearchWhereClause(columns, searchTerm);
+            var whereClause = BuildSearchWhereClause(columns);
             var quotedTableName = QuoteIdentifier(tableName);
             
             var query = _databaseType switch
@@ -345,43 +345,31 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         return columns;
     }
 
-    private string BuildSearchWhereClause(List<ColumnInfo> columns, string searchTerm)
+    private string BuildSearchWhereClause(List<ColumnInfo> columns)
     {
         var conditions = new List<string>();
         
         foreach (var column in columns)
         {
-            if (IsSearchableColumn(column.DataType))
-            {
-                var quotedColumn = QuoteIdentifier(column.Name);
-                var castExpression = _databaseType switch
-                {
-                    DatabaseType.PostgreSQL => $"CAST({quotedColumn} AS TEXT)",
-                    _ => $"CAST({quotedColumn} AS NVARCHAR(MAX))"
-                };
-                conditions.Add($"{castExpression} LIKE @SearchTerm");
-            }
+            var quotedColumn = QuoteIdentifier(column.Name);
+            var castExpression = BuildCastExpression(quotedColumn);
+            conditions.Add($"{castExpression} LIKE @SearchTerm");
         }
 
         if (conditions.Count == 0)
         {
-            if (columns.Count > 0)
-            {
-                var quotedColumn = QuoteIdentifier(columns[0].Name);
-                conditions.Add($"CAST({quotedColumn} AS NVARCHAR(MAX)) LIKE @SearchTerm");
-            }
-            else return "1=0";
+            return "1=0";
         }
 
         return string.Join(" OR ", conditions);
     }
 
-    private static bool IsSearchableColumn(string dataType)
+    private string BuildCastExpression(string quotedColumn) => _databaseType switch
     {
-        var searchableTypes = new[] { "varchar", "nvarchar", "char", "nchar", "text", "ntext",
-            "character varying", "character", "longtext", "mediumtext", "tinytext", "xml", "json" };
-        return searchableTypes.Any(t => dataType.StartsWith(t, StringComparison.OrdinalIgnoreCase));
-    }
+        DatabaseType.PostgreSQL => $"CAST({quotedColumn} AS TEXT)",
+        DatabaseType.MySQL => $"CAST({quotedColumn} AS CHAR)",
+        _ => $"CAST({quotedColumn} AS NVARCHAR(MAX))"
+    };
 
     private string QuoteIdentifier(string identifier) => _databaseType switch
     {
