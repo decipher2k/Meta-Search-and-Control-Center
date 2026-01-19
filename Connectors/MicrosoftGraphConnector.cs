@@ -449,23 +449,23 @@ public class MicrosoftGraphConnector : IDataSourceConnector, IDisposable
     }
 
     private List<ResultAction> GetCalendarActions() => [
-        new() { Id = "open-web", Name = L.Connector_M365_OpenOutlook, Icon = "[Cal]", Description = L.Connector_M365_OpenOutlook_Desc },
-        new() { Id = "copy-link", Name = L.Connector_M365_CopyLink, Icon = "[Copy]", Description = L.Connector_M365_CopyLink_Desc }
+        new() { Id = "open-web", Name = L.Connector_M365_OpenOutlook, Icon = "\uD83D\uDCC5", Description = L.Connector_M365_OpenOutlook_Desc },
+        new() { Id = "copy-link", Name = L.Connector_M365_CopyLink, Icon = "\uD83D\uDCCB", Description = L.Connector_M365_CopyLink_Desc }
     ];
     private List<ResultAction> GetToDoActions() => [
-        new() { Id = "open-web", Name = L.Connector_M365_OpenToDo, Icon = "[Task]", Description = L.Connector_M365_OpenToDo_Desc },
-        new() { Id = "copy-link", Name = L.Connector_M365_CopyLink, Icon = "[Copy]", Description = L.Connector_M365_CopyLink_Desc }
+        new() { Id = "open-web", Name = L.Connector_M365_OpenToDo, Icon = "\u2705", Description = L.Connector_M365_OpenToDo_Desc },
+        new() { Id = "copy-link", Name = L.Connector_M365_CopyLink, Icon = "\uD83D\uDCCB", Description = L.Connector_M365_CopyLink_Desc }
     ];
     private List<ResultAction> GetMailActions() => [
-        new() { Id = "open-web", Name = L.Connector_M365_OpenOutlook, Icon = "[Mail]", Description = L.Connector_M365_OpenOutlook_Desc },
-        new() { Id = "copy-link", Name = L.Connector_M365_CopyLink, Icon = "[Copy]", Description = L.Connector_M365_CopyLink_Desc }
+        new() { Id = "open-web", Name = L.Connector_M365_OpenOutlook, Icon = "\u2709", Description = L.Connector_M365_OpenOutlook_Desc },
+        new() { Id = "copy-link", Name = L.Connector_M365_CopyLink, Icon = "\uD83D\uDCCB", Description = L.Connector_M365_CopyLink_Desc }
     ];
     private List<ResultAction> GetOneNoteActions() => [
-        new() { Id = "open-web", Name = L.Connector_M365_OpenOneNote, Icon = "[Note]", Description = L.Connector_M365_OpenOneNote_Desc },
-        new() { Id = "copy-link", Name = L.Connector_M365_CopyLink, Icon = "[Copy]", Description = L.Connector_M365_CopyLink_Desc }
+        new() { Id = "open-web", Name = L.Connector_M365_OpenOneNote, Icon = "\uD83D\uDD92", Description = L.Connector_M365_OpenOneNote_Desc },
+        new() { Id = "copy-link", Name = L.Connector_M365_CopyLink, Icon = "\uD83D\uDCCB", Description = L.Connector_M365_CopyLink_Desc }
     ];
     private List<ResultAction> GetDefaultActions() => [
-        new() { Id = "open-web", Name = L.Connector_M365_OpenBrowser, Icon = "[Web]", Description = L.Connector_M365_OpenBrowser_Desc }
+        new() { Id = "open-web", Name = L.Connector_M365_OpenBrowser, Icon = "\uD83C\uDF10", Description = L.Connector_M365_OpenBrowser_Desc }
     ];
 
     public FrameworkElement? CreateCustomDetailView(SearchResult result)

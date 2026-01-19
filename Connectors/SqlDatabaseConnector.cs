@@ -493,8 +493,8 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
 
     private List<ResultAction> GetSqlActions() =>
     [
-        new() { Id = "copy-json", Name = L.Connector_SQL_CopyJson, Icon = "[JSON]", Description = L.Connector_SQL_CopyJson_Desc },
-        new() { Id = "copy-insert", Name = L.Connector_SQL_CopyInsert, Icon = "[SQL]", Description = L.Connector_SQL_CopyInsert_Desc }
+        new() { Id = "copy-json", Name = L.Connector_SQL_CopyJson, Icon = "\uD83E\uDDFE", Description = L.Connector_SQL_CopyJson_Desc },
+        new() { Id = "copy-insert", Name = L.Connector_SQL_CopyInsert, Icon = "\uD83D\uDDC3", Description = L.Connector_SQL_CopyInsert_Desc }
     ];
 
     public FrameworkElement? CreateCustomDetailView(SearchResult result)

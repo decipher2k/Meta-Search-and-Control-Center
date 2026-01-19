@@ -212,9 +212,9 @@ public class FileSystemConnector : IDataSourceConnector, IDisposable
     {
         return
         [
-            new() { Id = "open", Name = L.Connector_FileSystem_Open, Icon = "[File]", Description = L.Connector_FileSystem_Open_Desc },
-            new() { Id = "open-folder", Name = L.Connector_FileSystem_OpenFolder, Icon = "[Folder]", Description = L.Connector_FileSystem_OpenFolder_Desc },
-            new() { Id = "copy-path", Name = L.Connector_FileSystem_CopyPath, Icon = "[Copy]", Description = L.Connector_FileSystem_CopyPath_Desc }
+            new() { Id = "open", Name = L.Connector_FileSystem_Open, Icon = "\uD83D\uDCC4", Description = L.Connector_FileSystem_Open_Desc },
+            new() { Id = "open-folder", Name = L.Connector_FileSystem_OpenFolder, Icon = "\uD83D\uDCC1", Description = L.Connector_FileSystem_OpenFolder_Desc },
+            new() { Id = "copy-path", Name = L.Connector_FileSystem_CopyPath, Icon = "\uD83D\uDCCB", Description = L.Connector_FileSystem_CopyPath_Desc }
         ];
     }
 

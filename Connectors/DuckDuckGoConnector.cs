@@ -271,9 +271,9 @@ public partial class DuckDuckGoConnector : IDataSourceConnector, IDisposable
 
     private List<ResultAction> GetWebSearchActions() =>
     [
-        new() { Id = "open-browser", Name = L.Connector_DuckDuckGo_OpenBrowser, Icon = "[Web]", Description = L.Connector_DuckDuckGo_OpenBrowser_Desc },
-        new() { Id = "copy-url", Name = L.Connector_DuckDuckGo_CopyUrl, Icon = "[Copy]", Description = L.Connector_DuckDuckGo_CopyUrl_Desc },
-        new() { Id = "search-more", Name = L.Connector_DuckDuckGo_SearchMore, Icon = "[Search]", Description = L.Connector_DuckDuckGo_SearchMore_Desc }
+        new() { Id = "open-browser", Name = L.Connector_DuckDuckGo_OpenBrowser, Icon = "\uD83C\uDF10", Description = L.Connector_DuckDuckGo_OpenBrowser_Desc },
+        new() { Id = "copy-url", Name = L.Connector_DuckDuckGo_CopyUrl, Icon = "\uD83D\uDCCB", Description = L.Connector_DuckDuckGo_CopyUrl_Desc },
+        new() { Id = "search-more", Name = L.Connector_DuckDuckGo_SearchMore, Icon = "\uD83D\uDD0D", Description = L.Connector_DuckDuckGo_SearchMore_Desc }
     ];
 
     public FrameworkElement? CreateCustomDetailView(SearchResult result)

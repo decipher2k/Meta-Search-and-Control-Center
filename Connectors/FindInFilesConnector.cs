@@ -297,7 +297,6 @@ public class FindInFilesConnector : IDataSourceConnector, IDisposable
             result = "..." + result;
         if (end < line.Length)
             result = result + "...";
-
         return result;
     }
 
@@ -347,10 +346,10 @@ public class FindInFilesConnector : IDataSourceConnector, IDisposable
     {
         return
         [
-            new() { Id = "open", Name = L.Connector_FindInFiles_Open, Icon = "[File]", Description = L.Connector_FindInFiles_Open_Desc },
-            new() { Id = "open-folder", Name = L.Connector_FindInFiles_OpenFolder, Icon = "[Folder]", Description = L.Connector_FindInFiles_OpenFolder_Desc },
-            new() { Id = "copy-path", Name = L.Connector_FindInFiles_CopyPath, Icon = "[Copy]", Description = L.Connector_FindInFiles_CopyPath_Desc },
-            new() { Id = "copy-matches", Name = L.Connector_FindInFiles_CopyMatches, Icon = "[List]", Description = L.Connector_FindInFiles_CopyMatches_Desc }
+            new() { Id = "open", Name = L.Connector_FindInFiles_Open, Icon = "\uD83D\uDCC4", Description = L.Connector_FindInFiles_Open_Desc },
+            new() { Id = "open-folder", Name = L.Connector_FindInFiles_OpenFolder, Icon = "\uD83D\uDCC1", Description = L.Connector_FindInFiles_OpenFolder_Desc },
+            new() { Id = "copy-path", Name = L.Connector_FindInFiles_CopyPath, Icon = "\uD83D\uDCCB", Description = L.Connector_FindInFiles_CopyPath_Desc },
+            new() { Id = "copy-matches", Name = L.Connector_FindInFiles_CopyMatches, Icon = "\uD83D\uDCDD", Description = L.Connector_FindInFiles_CopyMatches_Desc }
         ];
     }
 
