@@ -1,0 +1,133 @@
+<Window x:Class="MSCC.Views.LiveRagQueryDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Live RAG Search"
+        Height="620" Width="680"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        MinHeight="520"
+        MinWidth="560"
+        Icon="/app-icon.ico">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock x:Name="TitleText"
+                       Text="Live RAG Search"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       Foreground="#2C3E50"/>
+            <TextBlock x:Name="DescriptionText"
+                       Text="Ask a natural-language question across the selected data sources."
+                       Foreground="Gray"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,0"/>
+            <TextBlock x:Name="SourceInfoText"
+                       Text="0 data sources selected"
+                       Foreground="#7F8C8D"
+                       FontSize="12"
+                       Margin="0,6,0,0"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Margin="0,0,0,12">
+            <TextBlock x:Name="QuestionLabel"
+                       Text="Question:"
+                       FontWeight="Medium"
+                       Margin="0,0,0,6"/>
+            <TextBox x:Name="QuestionTextBox"
+                     MinHeight="80"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     Padding="8"/>
+        </StackPanel>
+
+        <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock x:Name="SystemPromptLabel"
+                       Grid.Row="0"
+                       Text="System Prompt:"
+                       FontWeight="Medium"
+                       Margin="0,0,0,6"/>
+
+            <TextBox x:Name="SystemPromptTextBox"
+                     Grid.Row="1"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     Padding="8"/>
+        </Grid>
+
+        <Border Grid.Row="3"
+                Background="#F8F9FA"
+                CornerRadius="4"
+                Padding="12"
+                Margin="0,12,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,8,10">
+                    <TextBlock x:Name="MaxResultsLabel" Text="Results per term" FontSize="12"/>
+                    <TextBox x:Name="MaxResultsTextBox" Text="20" Padding="8,5"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="0" Grid.Column="1" Margin="8,0,0,10">
+                    <TextBlock x:Name="MaxContextPerSourceLabel" Text="Context per source" FontSize="12"/>
+                    <TextBox x:Name="MaxContextPerSourceTextBox" Text="10" Padding="8,5"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,8,10">
+                    <TextBlock x:Name="MaxContextTotalLabel" Text="Total context chunks" FontSize="12"/>
+                    <TextBox x:Name="MaxContextTotalTextBox" Text="40" Padding="8,5"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0,0,10">
+                    <TextBlock x:Name="MaxCharsLabel" Text="Characters per chunk" FontSize="12"/>
+                    <TextBox x:Name="MaxCharsTextBox" Text="2500" Padding="8,5"/>
+                </StackPanel>
+
+                <CheckBox Grid.Row="2"
+                          Grid.ColumnSpan="2"
+                          x:Name="IncludeMetadataCheckBox"
+                          Content="Include metadata"
+                          IsChecked="True"/>
+            </Grid>
+        </Border>
+
+        <StackPanel Grid.Row="4"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+            <Button x:Name="CancelBtn"
+                    Content="Cancel"
+                    Padding="20,10"
+                    Margin="0,0,8,0"
+                    Click="CancelButton_Click"/>
+            <Button x:Name="RunBtn"
+                    Content="Ask Live RAG"
+                    Padding="20,10"
+                    Background="#16A085"
+                    Foreground="White"
+                    Click="RunButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

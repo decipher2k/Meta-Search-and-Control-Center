@@ -1,0 +1,175 @@
+{
+  "dataSources": [
+    {
+      "id": "demo-aurora-files",
+      "name": "Demo Aurora - Dokumente",
+      "description": "Lokale Project-Aurora-Dokumente fuer Datei- und Live-RAG-Suche.",
+      "connectorId": "filesystem-connector",
+      "configuration": {
+        "BasePath": "DemoData/Aurora/documents",
+        "SearchPattern": "*.*",
+        "IncludeSubdirectories": "true"
+      },
+      "isEnabled": true,
+      "groupId": "demo-aurora-group"
+    },
+    {
+      "id": "demo-aurora-findinfiles",
+      "name": "Demo Aurora - Volltext in Dateien",
+      "description": "Durchsucht Project-Aurora-Markdown-, Text- und Code-Dateien zeilenweise.",
+      "connectorId": "find-in-files-connector",
+      "configuration": {
+        "BasePath": "DemoData/Aurora",
+        "FilePattern": "*.*",
+        "IncludeSubdirectories": "true",
+        "UseRegex": "false",
+        "CaseSensitive": "false"
+      },
+      "isEnabled": true,
+      "groupId": "demo-aurora-group"
+    },
+    {
+      "id": "demo-aurora-mockdb",
+      "name": "Demo Aurora - Mock Datenbank",
+      "description": "Mock-Datenbank-Connector mit Project-Aurora-Labeln und Beispielabfragen.",
+      "connectorId": "mock-database-connector",
+      "configuration": {
+        "ConnectionString": "demo://project-aurora",
+        "TableName": "aurora_documents"
+      },
+      "isEnabled": true,
+      "groupId": "demo-aurora-group"
+    },
+    {
+      "id": "demo-aurora-generic-api",
+      "name": "Demo Aurora - Lokale JSON API",
+      "description": "Generic-API-Connector liest lokale Project-Aurora-JSON-Ergebnisse.",
+      "connectorId": "generic-api-connector",
+      "configuration": {
+        "ApiEndpoint": "DemoData/Aurora/api/aurora-api-results.json",
+        "HttpMethod": "GET",
+        "AuthType": "None",
+        "QueryParameters": "",
+        "PostBody": "",
+        "ContentType": "application/json",
+        "CustomHeaders": "",
+        "ResultJsonPath": "results",
+        "ResultTitleProperty": "title",
+        "ResultDescriptionProperty": "description",
+        "ResultUrlProperty": "url",
+        "TimeoutSeconds": "5"
+      },
+      "isEnabled": true,
+      "groupId": "demo-aurora-group"
+    },
+    {
+      "id": "demo-aurora-duckduckgo",
+      "name": "Demo Aurora - Web Kontext",
+      "description": "DuckDuckGo-Websuche fuer oeffentliche Begriffe zum Aurora-Thema wie Smart City, Privacy, Traffic Simulation.",
+      "connectorId": "duckduckgo-connector",
+      "configuration": {
+        "MaxResults": "8",
+        "Region": "de-de",
+        "SafeSearch": "true"
+      },
+      "isEnabled": true,
+      "groupId": "demo-aurora-group"
+    },
+    {
+      "id": "demo-aurora-sql",
+      "name": "Demo Aurora - SQL Seed",
+      "description": "SQL-Connector fuer aurora_demo; Seed-Skript liegt in DemoData/Aurora/sql/aurora_mysql_seed.sql.",
+      "connectorId": "sql-database-connector",
+      "configuration": {
+        "ConnectionString": "Server=localhost;Database=aurora_demo;UserId=root;Password=;",
+        "DatabaseType": "MySQL",
+        "Tables": "aurora_cities,aurora_risks",
+        "CustomQuery": ""
+      },
+      "isEnabled": false,
+      "groupId": "demo-aurora-group"
+    },
+    {
+      "id": "demo-aurora-openai",
+      "name": "Demo Aurora - OpenAI Analyse Vorlage",
+      "description": "OpenAI-kompatibler Connector mit Project-Aurora-Systemprompt; API-Key eintragen und aktivieren.",
+      "connectorId": "openai-connector",
+      "configuration": {
+        "ApiEndpoint": "https://api.openai.com/v1/chat/completions",
+        "ApiKey": "DEMO_API_KEY_EINTRAGEN",
+        "Model": "gpt-4.1-mini",
+        "SystemPrompt": "Du bist der Project-Aurora-Analyseassistent. Antworte nur auf Basis der verbundenen Demo-Evidenz zu Staedten, Risiken, Budget und Launch Review.",
+        "MaxTokens": "1200",
+        "Temperature": "0.2"
+      },
+      "isEnabled": false,
+      "groupId": "demo-aurora-group"
+    },
+    {
+      "id": "demo-aurora-imap",
+      "name": "Demo Aurora - IMAP Vorlage",
+      "description": "IMAP-Connector-Vorlage fuer Project-Aurora-Mails; Beispielmail liegt lokal als EML-Datei.",
+      "connectorId": "imap-connector",
+      "configuration": {
+        "Server": "imap.example.com",
+        "Port": "993",
+        "EmailAddress": "aurora-demo@example.com",
+        "AuthType": "Password",
+        "Password": "DEMO_PASSWORD_EINTRAGEN",
+        "OAuth2AccessToken": "",
+        "Encryption": "SslTls",
+        "FolderName": "INBOX",
+        "MaxResults": "20",
+        "MaxDaysBack": "120",
+        "LocalSampleFile": "DemoData/Aurora/mail/aurora-launch-review.eml"
+      },
+      "isEnabled": false,
+      "groupId": "demo-aurora-group"
+    },
+    {
+      "id": "demo-aurora-graph",
+      "name": "Demo Aurora - Microsoft Graph Vorlage",
+      "description": "Microsoft-Graph-Vorlage fuer Kalender/ToDo/Mail/OneNote; lokales Sample liegt als JSON bei.",
+      "connectorId": "microsoft-graph-connector",
+      "configuration": {
+        "ClientId": "DEMO_CLIENT_ID_EINTRAGEN",
+        "TenantId": "common",
+        "SearchCalendar": "true",
+        "SearchToDo": "true",
+        "SearchMail": "true",
+        "SearchOneNote": "true",
+        "MaxDaysBack": "120",
+        "LocalSampleFile": "DemoData/Aurora/graph/aurora-graph-calendar-and-todo.json"
+      },
+      "isEnabled": false,
+      "groupId": "demo-aurora-group"
+    }
+  ],
+  "groups": [
+    {
+      "id": "demo-aurora-group",
+      "name": "Project Aurora Demo",
+      "description": "Zusammenhaengende Demo-Daten fuer alle MSCC-Konnektoren.",
+      "color": "#16A085",
+      "iconName": "Database"
+    }
+  ],
+  "savedQueries": [
+    {
+      "id": "demo-aurora-query-risks",
+      "name": "Demo: Aurora Risiken",
+      "searchTerm": "Welche Risiken hat Project Aurora und wer ist verantwortlich?",
+      "labels": [],
+      "selectedDataSourceIds": [],
+      "createdAt": "2026-06-27T00:00:00"
+    },
+    {
+      "id": "demo-aurora-query-city",
+      "name": "Demo: Aurora Stadtvergleich",
+      "searchTerm": "Welche Stadt hat die hoechste erwartete Einsparung?",
+      "labels": [],
+      "selectedDataSourceIds": [],
+      "createdAt": "2026-06-27T00:00:00"
+    }
+  ]
+}

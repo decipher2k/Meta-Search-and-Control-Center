@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -18,6 +19,10 @@ namespace MSCC.Connectors;
 /// </summary>
 public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
 {
+    private static readonly Regex DirectSelectRegex = new(@"\bselect\b[\s\S]+?(?:;|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex ExistingLimitRegex = new(@"\b(limit\s+\d+|top\s+\d+|fetch\s+first\s+\d+\s+rows)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex NumberRegex = new(@"\b(\d{1,4})\b", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
     private string _connectionString = string.Empty;
     private DatabaseType _databaseType = DatabaseType.MSSQL;
     private string _tables = string.Empty;
@@ -82,15 +87,9 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
             }
             _connectionString = connectionString;
 
-            if (configuration.TryGetValue("DatabaseType", out var dbType))
-            {
-                _databaseType = dbType.ToUpperInvariant() switch
-                {
-                    "MYSQL" => DatabaseType.MySQL,
-                    "POSTGRESQL" or "POSTGRES" => DatabaseType.PostgreSQL,
-                    _ => DatabaseType.MSSQL
-                };
-            }
+            _databaseType = configuration.TryGetValue("DatabaseType", out var dbType)
+                ? ParseDatabaseType(dbType, connectionString)
+                : InferDatabaseType(connectionString);
 
             _tables = configuration.TryGetValue("Tables", out var tables) ? tables : "*";
 
@@ -157,6 +156,398 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         }
 
         return results.Take(maxResults);
+    }
+
+    public bool SupportsLiveRag => true;
+
+    public async Task<LiveRagRetrievalResult> RetrieveLiveRagContextAsync(
+        LiveRagQueryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new LiveRagRetrievalResult
+        {
+            IsNativeLiveRag = true,
+            SourceName = Name,
+            ConnectorId = Id
+        };
+
+        if (!_isInitialized)
+        {
+            result.Success = false;
+            result.ErrorMessage = "SQL connector is not initialized.";
+            return result;
+        }
+
+        try
+        {
+            using var connection = CreateConnection();
+            await connection.OpenAsync(cancellationToken);
+
+            var directQuery = TryExtractSafeSelectQuery(request);
+            if (!string.IsNullOrWhiteSpace(directQuery))
+            {
+                try
+                {
+                    await ExecuteLiveRagSqlQueryAsync(
+                        connection,
+                        directQuery,
+                        "CustomSelect",
+                        request,
+                        result,
+                        cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[SqlDatabaseConnector] Direct Live RAG SQL failed: {ex.Message}");
+                }
+            }
+
+            if (result.ContextItems.Count == 0)
+            {
+                var schema = await GetLiveRagSchemaAsync(connection, cancellationToken);
+                var plans = BuildLiveRagQueryPlans(request, schema).ToList();
+
+                foreach (var plan in plans)
+                {
+                    if (result.ContextItems.Count >= Math.Max(1, request.MaxContextItems))
+                        break;
+
+                    try
+                    {
+                        await ExecuteLiveRagSqlQueryAsync(
+                            connection,
+                            plan.Sql,
+                            plan.TableName,
+                            request,
+                            result,
+                            cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[SqlDatabaseConnector] Planned Live RAG SQL failed for {plan.TableName}: {ex.Message}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            result.Success = false;
+            result.ErrorMessage = ex.Message;
+            Debug.WriteLine($"[SqlDatabaseConnector] Live RAG SQL error: {ex.Message}");
+        }
+
+        if (result.ContextItems.Count == 0 && result.Success)
+        {
+            var fallback = await LiveRagConnectorHelpers.RetrieveFromSearchAsync(
+                this,
+                request,
+                SearchAsync,
+                (searchResult, retrievalQuery, liveRequest) => LiveRagConnectorHelpers.CreateContextItem(
+                    searchResult,
+                    retrievalQuery,
+                    liveRequest,
+                    LiveRagConnectorHelpers.BuildMetadataContent(
+                        searchResult,
+                        "Type",
+                        "DatabaseType",
+                        "MatchingColumns")),
+                native: false,
+                cancellationToken);
+
+            result.ExecutedQueries.AddRange(fallback.ExecutedQueries);
+            result.ContextItems.AddRange(fallback.ContextItems);
+            if (!fallback.Success)
+            {
+                result.Success = false;
+                result.ErrorMessage = fallback.ErrorMessage;
+            }
+        }
+
+        if (result.ContextItems.Count == 0 && string.IsNullOrWhiteSpace(result.ErrorMessage))
+        {
+            result.ErrorMessage = "No SQL rows matched the live RAG request.";
+        }
+
+        return result;
+    }
+
+    public async Task<LiveRagSourceProfile> DescribeLiveRagCapabilitiesAsync(
+        DataSource dataSource,
+        CancellationToken cancellationToken = default)
+    {
+        var profile = new LiveRagSourceProfile
+        {
+            DataSourceId = dataSource.Id,
+            SourceName = dataSource.Name,
+            ConnectorId = Id,
+            Description = dataSource.Description,
+            SupportsNativeLiveRag = true,
+            SupportedOperations =
+            [
+                LiveRagOperationType.StructuredQuery,
+                LiveRagOperationType.TopN,
+                LiveRagOperationType.Aggregate,
+                LiveRagOperationType.KeywordSearch
+            ],
+            MaxOperations = 3,
+            MaxResults = 50,
+            Metadata =
+            {
+                ["databaseType"] = _databaseType.ToString()
+            }
+        };
+
+        if (!_isInitialized)
+            return profile;
+
+        try
+        {
+            using var connection = CreateConnection();
+            await connection.OpenAsync(cancellationToken);
+            var schema = await GetLiveRagSchemaAsync(connection, cancellationToken);
+
+            profile.Targets = schema.Select(table => table.Name).ToList();
+            profile.Fields = schema
+                .SelectMany(table => table.Columns.Select(column => $"{table.Name}.{column.Name}"))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(200)
+                .ToList();
+            profile.Metadata["schema"] = schema.Select(table => new
+            {
+                table = table.Name,
+                columns = table.Columns.Select(column => new { column.Name, column.DataType })
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            profile.Metadata["schemaError"] = ex.Message;
+        }
+
+        return profile;
+    }
+
+    public async Task<LiveRagRetrievalResult> RetrieveLiveRagContextByOperationsAsync(
+        LiveRagQueryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.Operations.Count == 0)
+            return await RetrieveLiveRagContextAsync(request, cancellationToken);
+
+        var result = new LiveRagRetrievalResult
+        {
+            IsNativeLiveRag = true,
+            SourceName = Name,
+            ConnectorId = Id
+        };
+
+        if (!_isInitialized)
+        {
+            result.Success = false;
+            result.ErrorMessage = "SQL connector is not initialized.";
+            return result;
+        }
+
+        try
+        {
+            using var connection = CreateConnection();
+            await connection.OpenAsync(cancellationToken);
+            var schema = await GetLiveRagSchemaAsync(connection, cancellationToken);
+
+            foreach (var operation in request.Operations.Take(Math.Max(1, request.MaxOperationsPerSource)))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var trace = new LiveRagExecutionTrace
+                {
+                    OperationId = operation.Id,
+                    DataSourceId = operation.DataSourceId,
+                    SourceName = operation.SourceName,
+                    ConnectorId = Id,
+                    OperationType = operation.Type,
+                    Accepted = true,
+                    StartedAt = DateTime.Now
+                };
+
+                var beforeCount = result.ContextItems.Count;
+                try
+                {
+                    if (operation.Type == LiveRagOperationType.KeywordSearch)
+                    {
+                        var keywordResult = await ExecuteKeywordLiveRagOperationAsync(
+                            operation,
+                            request,
+                            cancellationToken);
+
+                        result.ExecutedQueries.AddRange(keywordResult.ExecutedQueries);
+                        result.ContextItems.AddRange(keywordResult.ContextItems);
+                        result.ExecutedOperations.Add(operation);
+                        trace.ResultCount = keywordResult.ContextItems.Count;
+                        trace.Reason = "Executed bounded SQL keyword live operation.";
+                        continue;
+                    }
+
+                    var sql = BuildSqlForLiveRagOperation(operation, request, schema);
+                    if (string.IsNullOrWhiteSpace(sql))
+                    {
+                        trace.Accepted = false;
+                        trace.Reason = "Could not map operation to a safe SQL SELECT.";
+                        result.RejectedOperations.Add(operation);
+                        result.Diagnostics.Add(trace);
+                        continue;
+                    }
+
+                    await ExecuteLiveRagSqlQueryAsync(
+                        connection,
+                        sql,
+                        operation.Target ?? "LiveRagQuery",
+                        request,
+                        result,
+                        cancellationToken);
+
+                    foreach (var item in result.ContextItems.Skip(beforeCount))
+                    {
+                        item.OperationId = operation.Id;
+                        item.OperationType = operation.Type;
+                    }
+
+                    result.ExecutedOperations.Add(operation);
+                    trace.ResultCount = result.ContextItems.Count - beforeCount;
+                    trace.Reason = "Executed safe read-only SQL live operation.";
+                }
+                catch (Exception ex)
+                {
+                    trace.Accepted = false;
+                    trace.ErrorMessage = ex.Message;
+                    trace.Reason = "SQL live operation failed.";
+                    result.RejectedOperations.Add(operation);
+                }
+                finally
+                {
+                    trace.CompletedAt = DateTime.Now;
+                    result.Diagnostics.Add(trace);
+                }
+
+                if (result.ContextItems.Count >= Math.Max(1, request.MaxContextItems))
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            result.Success = false;
+            result.ErrorMessage = ex.Message;
+        }
+
+        if (result.ContextItems.Count == 0 && result.RejectedOperations.Count > 0)
+        {
+            result.Success = false;
+            result.ErrorMessage ??= "No SQL live RAG operation produced context.";
+        }
+
+        return result;
+    }
+
+    private async Task<LiveRagRetrievalResult> ExecuteKeywordLiveRagOperationAsync(
+        LiveRagOperation operation,
+        LiveRagQueryRequest request,
+        CancellationToken cancellationToken)
+    {
+        var operationRequest = new LiveRagQueryRequest
+        {
+            Question = string.IsNullOrWhiteSpace(operation.Query)
+                ? request.Question
+                : operation.Query,
+            SearchTerms = operation.SearchTerms.Count > 0
+                ? operation.SearchTerms
+                : LiveRagConnectorHelpers.CreateSearchTerms(operation.Query, request.SearchTerms, request.MaxSearchTerms),
+            Mode = operation.IsDegradedFallback
+                ? LiveRagMode.DegradedKeywordFallback
+                : request.Mode,
+            MaxSearchTerms = request.MaxSearchTerms,
+            MaxResultsPerSearchTerm = Math.Clamp(
+                operation.Limit <= 0 ? request.MaxResultsPerSearchTerm : operation.Limit,
+                1,
+                Math.Max(1, request.MaxCandidateItems)),
+            MaxContextItems = request.MaxContextItems,
+            MaxCharactersPerItem = request.MaxCharactersPerItem,
+            IncludeMetadata = request.IncludeMetadata,
+            MaxOperationsPerSource = request.MaxOperationsPerSource,
+            MaxCandidateItems = request.MaxCandidateItems,
+            Options = new Dictionary<string, string>(request.Options, StringComparer.OrdinalIgnoreCase)
+        };
+
+        var keywordResult = await LiveRagConnectorHelpers.RetrieveFromSearchAsync(
+            this,
+            operationRequest,
+            SearchAsync,
+            (searchResult, retrievalQuery, liveRequest) => LiveRagConnectorHelpers.CreateContextItem(
+                searchResult,
+                retrievalQuery,
+                liveRequest,
+                LiveRagConnectorHelpers.BuildMetadataContent(
+                    searchResult,
+                    "Type",
+                    "DatabaseType",
+                    "MatchingColumns")),
+            native: true,
+            cancellationToken);
+
+        foreach (var item in keywordResult.ContextItems)
+        {
+            item.OperationId = operation.Id;
+            item.OperationType = operation.Type;
+        }
+
+        return keywordResult;
+    }
+
+    private static DatabaseType ParseDatabaseType(string? configuredType, string connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(configuredType))
+            return InferDatabaseType(connectionString);
+
+        var normalizedType = configuredType.Trim().ToUpperInvariant();
+        if (normalizedType is "MYSQL" or "MARIADB")
+            return DatabaseType.MySQL;
+        if (normalizedType is "POSTGRESQL" or "POSTGRES")
+            return DatabaseType.PostgreSQL;
+
+        if (normalizedType is "MSSQL" or "SQLSERVER" or "SQL SERVER")
+        {
+            var inferred = InferDatabaseType(connectionString);
+            if (inferred != DatabaseType.MSSQL && LooksLikeDefaultSqlServerSelection(configuredType))
+                return inferred;
+        }
+
+        return DatabaseType.MSSQL;
+    }
+
+    private static bool LooksLikeDefaultSqlServerSelection(string configuredType)
+    {
+        return string.Equals(configuredType.Trim(), "MSSQL", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static DatabaseType InferDatabaseType(string connectionString)
+    {
+        var normalized = connectionString.Replace(" ", string.Empty).ToLowerInvariant();
+
+        if (normalized.Contains("userid=", StringComparison.Ordinal) ||
+            normalized.Contains("uid=", StringComparison.Ordinal) ||
+            normalized.Contains("allowloadlocalinfile=", StringComparison.Ordinal) ||
+            normalized.Contains("treattinyasboolean=", StringComparison.Ordinal) ||
+            normalized.Contains("port=3306", StringComparison.Ordinal))
+        {
+            return DatabaseType.MySQL;
+        }
+
+        if (normalized.Contains("host=", StringComparison.Ordinal) ||
+            normalized.Contains("username=", StringComparison.Ordinal) ||
+            normalized.Contains("searchpath=", StringComparison.Ordinal) ||
+            normalized.Contains("port=5432", StringComparison.Ordinal))
+        {
+            return DatabaseType.PostgreSQL;
+        }
+
+        return DatabaseType.MSSQL;
     }
 
     private DbConnection CreateConnection()
@@ -426,6 +817,590 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
         };
     }
 
+    private async Task<List<TableInfo>> GetLiveRagSchemaAsync(DbConnection connection, CancellationToken ct)
+    {
+        var tables = await GetTablesToSearchAsync(connection, ct);
+        var schema = new List<TableInfo>();
+        const int maxSchemaTables = 50;
+
+        foreach (var table in tables.Take(maxSchemaTables))
+        {
+            if (ct.IsCancellationRequested)
+                break;
+
+            try
+            {
+                var columns = await GetTableColumnsAsync(connection, table, ct);
+                if (columns.Count > 0)
+                {
+                    schema.Add(new TableInfo
+                    {
+                        Name = table,
+                        Columns = columns
+                    });
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SqlDatabaseConnector] Live RAG schema read failed for {table}: {ex.Message}");
+            }
+        }
+
+        return schema;
+    }
+
+    private IEnumerable<SqlLiveRagPlan> BuildLiveRagQueryPlans(LiveRagQueryRequest request, List<TableInfo> schema)
+    {
+        if (schema.Count == 0)
+            yield break;
+
+        var foldedText = FoldText(BuildRetrievalText(request));
+        var limit = DetectRequestedLimit(foldedText, request);
+        var descending = !ContainsAny(foldedText, "kleinste", "kleinsten", "niedrigste", "niedrigsten", "lowest", "least", "smallest", "asc");
+
+        var rankedTables = schema
+            .Select(table => new
+            {
+                Table = table,
+                Score = ScoreTableForQuestion(table, foldedText, schema.Count)
+            })
+            .Where(item => item.Score > 0)
+            .OrderByDescending(item => item.Score)
+            .ThenBy(item => item.Table.Name)
+            .Take(Math.Max(1, request.MaxSearchTerms));
+
+        foreach (var rankedTable in rankedTables)
+        {
+            var table = rankedTable.Table;
+            var orderColumn = ResolveOrderColumn(table, foldedText);
+            var selectedColumns = ResolveSelectedColumns(table, foldedText, orderColumn);
+            var sql = BuildSelectSql(table.Name, selectedColumns, orderColumn, descending, limit);
+
+            yield return new SqlLiveRagPlan(table.Name, sql);
+        }
+    }
+
+    private string BuildSqlForLiveRagOperation(
+        LiveRagOperation operation,
+        LiveRagQueryRequest request,
+        List<TableInfo> schema)
+    {
+        if (operation.Type is LiveRagOperationType.StructuredQuery or LiveRagOperationType.Aggregate &&
+            IsSafeReadOnlySelect(operation.Query))
+        {
+            return EnsureSelectLimit(operation.Query.Trim().TrimEnd(';'), operation.Limit);
+        }
+
+        if (operation.Type == LiveRagOperationType.Aggregate)
+        {
+            var aggregateSql = BuildAggregateSqlForLiveRagOperation(operation, request, schema);
+            if (!string.IsNullOrWhiteSpace(aggregateSql))
+                return aggregateSql;
+        }
+
+        var foldedText = FoldText($"{operation.Query} {operation.Target} {string.Join(" ", operation.SearchTerms)}");
+        var table = ResolveOperationTable(operation, schema, foldedText);
+        if (table == null)
+        {
+            var planned = BuildLiveRagQueryPlans(new LiveRagQueryRequest
+            {
+                Question = string.IsNullOrWhiteSpace(operation.Query) ? request.Question : operation.Query,
+                SearchTerms = operation.SearchTerms,
+                MaxSearchTerms = request.MaxSearchTerms,
+                MaxResultsPerSearchTerm = operation.Limit <= 0 ? request.MaxResultsPerSearchTerm : operation.Limit,
+                MaxContextItems = request.MaxContextItems,
+                MaxCharactersPerItem = request.MaxCharactersPerItem,
+                IncludeMetadata = request.IncludeMetadata
+            }, schema).FirstOrDefault();
+
+            return planned?.Sql ?? string.Empty;
+        }
+
+        operation.Target = table.Name;
+
+        var orderColumn = ResolveColumn(table, operation.SortField)
+            ?? ResolveOrderColumn(table, foldedText);
+        var selectedColumns = ResolveSelectedColumnsForOperation(table, operation, foldedText, orderColumn);
+
+        return BuildSelectSql(
+            table.Name,
+            selectedColumns,
+            orderColumn,
+            operation.SortDescending,
+            operation.Limit <= 0 ? request.MaxResultsPerSearchTerm : operation.Limit);
+    }
+
+    private string BuildAggregateSqlForLiveRagOperation(
+        LiveRagOperation operation,
+        LiveRagQueryRequest request,
+        List<TableInfo> schema)
+    {
+        var foldedText = FoldText($"{operation.Query} {operation.Target} {string.Join(" ", operation.SearchTerms)}");
+        var table = ResolveOperationTable(operation, schema, foldedText);
+        if (table == null)
+            return string.Empty;
+
+        operation.Target = table.Name;
+        var aggregateFunction = ResolveAggregateFunction(foldedText);
+
+        if (aggregateFunction == "COUNT")
+        {
+            return $"SELECT COUNT(*) AS {QuoteIdentifier("count")} FROM {QuoteIdentifier(table.Name)}";
+        }
+
+        var aggregateColumn = ResolveColumn(table, operation.SortField)
+            ?? operation.SelectFields
+                .Select(field => ResolveColumn(table, field))
+                .FirstOrDefault(column => column != null && IsNumericColumn(column))
+            ?? ResolveOrderColumn(table, foldedText)
+            ?? table.Columns.FirstOrDefault(IsNumericColumn);
+
+        if (aggregateColumn == null)
+        {
+            var planned = BuildLiveRagQueryPlans(new LiveRagQueryRequest
+            {
+                Question = operation.Query,
+                SearchTerms = operation.SearchTerms,
+                MaxSearchTerms = request.MaxSearchTerms,
+                MaxResultsPerSearchTerm = operation.Limit <= 0 ? request.MaxResultsPerSearchTerm : operation.Limit,
+                MaxContextItems = request.MaxContextItems,
+                MaxCharactersPerItem = request.MaxCharactersPerItem,
+                IncludeMetadata = request.IncludeMetadata
+            }, schema).FirstOrDefault();
+
+            return planned?.Sql ?? string.Empty;
+        }
+
+        var alias = $"{aggregateFunction.ToLowerInvariant()}_{aggregateColumn.Name}";
+        return $"SELECT {aggregateFunction}({QuoteIdentifier(aggregateColumn.Name)}) AS {QuoteIdentifier(alias)} FROM {QuoteIdentifier(table.Name)}";
+    }
+
+    private static string ResolveAggregateFunction(string foldedText)
+    {
+        if (ContainsAny(foldedText, "durchschnitt", "average", "avg", "mittelwert"))
+            return "AVG";
+        if (ContainsAny(foldedText, "sum", "summe", "total", "gesamt"))
+            return "SUM";
+        if (ContainsAny(foldedText, "minimum", "min", "kleinste", "niedrigste", "lowest", "least"))
+            return "MIN";
+        if (ContainsAny(foldedText, "maximum", "max", "groesste", "hoechste", "largest", "highest"))
+            return "MAX";
+        return "COUNT";
+    }
+
+    private static TableInfo? ResolveOperationTable(
+        LiveRagOperation operation,
+        List<TableInfo> schema,
+        string foldedText)
+    {
+        if (!string.IsNullOrWhiteSpace(operation.Target))
+        {
+            var direct = schema.FirstOrDefault(table =>
+                string.Equals(table.Name, operation.Target, StringComparison.OrdinalIgnoreCase));
+            if (direct != null)
+                return direct;
+        }
+
+        return schema
+            .Select(table => new
+            {
+                Table = table,
+                Score = IdentifierAppears(foldedText, table.Name) || TableConceptAppears(table.Name, foldedText)
+                    ? 100
+                    : table.Columns.Count(column => IdentifierAppears(foldedText, column.Name) || ColumnConceptAppears(column, foldedText))
+            })
+            .Where(item => item.Score > 0)
+            .OrderByDescending(item => item.Score)
+            .ThenBy(item => item.Table.Name)
+            .Select(item => item.Table)
+            .FirstOrDefault();
+    }
+
+    private static ColumnInfo? ResolveColumn(TableInfo table, string? columnName)
+    {
+        if (string.IsNullOrWhiteSpace(columnName))
+            return null;
+
+        columnName = columnName.Trim().Trim('`', '"', '[', ']');
+        var lastDot = columnName.LastIndexOf('.');
+        if (lastDot >= 0 && lastDot + 1 < columnName.Length)
+            columnName = columnName[(lastDot + 1)..].Trim().Trim('`', '"', '[', ']');
+
+        return table.Columns.FirstOrDefault(column =>
+            string.Equals(column.Name, columnName, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(FoldText(column.Name), FoldText(columnName), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static List<ColumnInfo> ResolveSelectedColumnsForOperation(
+        TableInfo table,
+        LiveRagOperation operation,
+        string foldedText,
+        ColumnInfo? orderColumn)
+    {
+        var selected = new List<ColumnInfo>();
+
+        foreach (var field in operation.SelectFields)
+        {
+            var column = ResolveColumn(table, field);
+            if (column != null)
+                AddColumn(selected, column);
+        }
+
+        if (selected.Count == 0)
+            selected = ResolveSelectedColumns(table, foldedText, orderColumn);
+
+        if (orderColumn != null)
+            AddColumn(selected, orderColumn);
+
+        return selected.Take(10).ToList();
+    }
+
+    private string TryExtractSafeSelectQuery(LiveRagQueryRequest request)
+    {
+        foreach (var text in new[] { request.Question }.Concat(request.SearchTerms))
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                continue;
+
+            var match = DirectSelectRegex.Match(text);
+            if (!match.Success)
+                continue;
+
+            var sql = match.Value.Trim().TrimEnd(';').Trim();
+            if (!IsSafeReadOnlySelect(sql))
+                continue;
+
+            return EnsureSelectLimit(sql, DetectRequestedLimit(FoldText(text), request));
+        }
+
+        return string.Empty;
+    }
+
+    private string EnsureSelectLimit(string sql, int limit)
+    {
+        if (ExistingLimitRegex.IsMatch(sql))
+            return sql;
+
+        return _databaseType switch
+        {
+            DatabaseType.MSSQL => Regex.Replace(sql, @"^\s*select\s+", $"SELECT TOP {limit} ", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+            _ => $"{sql} LIMIT {limit}"
+        };
+    }
+
+    private static bool IsSafeReadOnlySelect(string sql)
+    {
+        if (string.IsNullOrWhiteSpace(sql))
+            return false;
+
+        var foldedSql = FoldText(sql);
+        if (!foldedSql.TrimStart().StartsWith("select ", StringComparison.Ordinal))
+            return false;
+
+        if (foldedSql.Contains(';') ||
+            foldedSql.Contains("--", StringComparison.Ordinal) ||
+            foldedSql.Contains("/*", StringComparison.Ordinal) ||
+            foldedSql.Contains("*/", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var forbidden = new[]
+        {
+            " insert ", " update ", " delete ", " drop ", " alter ", " truncate ",
+            " create ", " replace ", " grant ", " revoke ", " call ", " exec ",
+            " execute ", " merge ", " into outfile ", " load_file "
+        };
+
+        return !forbidden.Any(keyword => foldedSql.Contains(keyword, StringComparison.Ordinal));
+    }
+
+    private async Task ExecuteLiveRagSqlQueryAsync(
+        DbConnection connection,
+        string sql,
+        string tableName,
+        LiveRagQueryRequest request,
+        LiveRagRetrievalResult result,
+        CancellationToken ct)
+    {
+        result.ExecutedQueries.Add(sql);
+
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+
+        using var reader = await command.ExecuteReaderAsync(ct);
+        var rowNumber = 0;
+
+        while (await reader.ReadAsync(ct))
+        {
+            rowNumber++;
+            if (result.ContextItems.Count >= Math.Max(1, request.MaxContextItems))
+                break;
+
+            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var contentBuilder = new StringBuilder();
+
+            for (var i = 0; i < reader.FieldCount; i++)
+            {
+                var columnName = reader.GetName(i);
+                var value = reader.IsDBNull(i) ? "NULL" : reader.GetValue(i)?.ToString() ?? "";
+                values[columnName] = value;
+
+                if (contentBuilder.Length > 0)
+                    contentBuilder.Append(" | ");
+                contentBuilder.Append(columnName).Append(": ").Append(value);
+            }
+
+            var content = LiveRagConnectorHelpers.NormalizeWhitespace(contentBuilder.ToString());
+            if (request.MaxCharactersPerItem > 0 && content.Length > request.MaxCharactersPerItem)
+                content = content[..request.MaxCharactersPerItem] + "...";
+
+            var metadata = request.IncludeMetadata
+                ? values.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+
+            metadata["Type"] = "SqlLiveRagRecord";
+            metadata["TableName"] = tableName;
+            metadata["DatabaseType"] = _databaseType.ToString();
+
+            result.ContextItems.Add(new LiveRagContextItem
+            {
+                Title = BuildRowTitle(values, tableName, rowNumber),
+                Content = content,
+                SourceName = $"SQL - {tableName}",
+                ConnectorId = Id,
+                OriginalReference = $"{tableName}:{rowNumber}:{Guid.NewGuid():N}",
+                RelevanceScore = Math.Max(70, 100 - rowNumber),
+                FromNativeLiveRag = true,
+                RetrievalQuery = sql,
+                Metadata = metadata
+            });
+        }
+    }
+
+    private string BuildSelectSql(
+        string tableName,
+        List<ColumnInfo> selectedColumns,
+        ColumnInfo? orderColumn,
+        bool descending,
+        int limit)
+    {
+        var quotedTable = QuoteIdentifier(tableName);
+        var selectList = selectedColumns.Count == 0
+            ? "*"
+            : string.Join(", ", selectedColumns.Select(column => QuoteIdentifier(column.Name)));
+        var orderClause = orderColumn == null
+            ? string.Empty
+            : $" ORDER BY {QuoteIdentifier(orderColumn.Name)} {(descending ? "DESC" : "ASC")}";
+
+        return _databaseType switch
+        {
+            DatabaseType.MSSQL => $"SELECT TOP {limit} {selectList} FROM {quotedTable}{orderClause}",
+            _ => $"SELECT {selectList} FROM {quotedTable}{orderClause} LIMIT {limit}"
+        };
+    }
+
+    private static int ScoreTableForQuestion(TableInfo table, string foldedText, int schemaTableCount)
+    {
+        var score = schemaTableCount == 1 ? 5 : 0;
+
+        if (IdentifierAppears(foldedText, table.Name))
+            score += 100;
+        else if (TableConceptAppears(table.Name, foldedText))
+            score += 90;
+
+        foreach (var column in table.Columns)
+        {
+            if (IdentifierAppears(foldedText, column.Name))
+                score += 20;
+            else if (ColumnConceptAppears(column, foldedText))
+                score += 12;
+        }
+
+        return score;
+    }
+
+    private static ColumnInfo? ResolveOrderColumn(TableInfo table, string foldedText)
+    {
+        var mentionedNumericColumn = table.Columns
+            .Where(column => IsNumericColumn(column) && (IdentifierAppears(foldedText, column.Name) || ColumnConceptAppears(column, foldedText)))
+            .OrderByDescending(column => IdentifierAppears(foldedText, column.Name) ? 2 : 1)
+            .FirstOrDefault();
+
+        if (mentionedNumericColumn != null)
+            return mentionedNumericColumn;
+
+        if (ContainsAny(foldedText, "top", "meiste", "meisten", "groesste", "groessten", "hoechste", "hoechsten", "largest", "highest", "most"))
+        {
+            return table.Columns.FirstOrDefault(column => IsNumericColumn(column));
+        }
+
+        return null;
+    }
+
+    private static List<ColumnInfo> ResolveSelectedColumns(TableInfo table, string foldedText, ColumnInfo? orderColumn)
+    {
+        var selected = new List<ColumnInfo>();
+
+        foreach (var column in table.Columns.Where(IsNameLikeColumn))
+            AddColumn(selected, column);
+
+        foreach (var column in table.Columns.Where(column => IdentifierAppears(foldedText, column.Name) || ColumnConceptAppears(column, foldedText)))
+            AddColumn(selected, column);
+
+        if (orderColumn != null)
+            AddColumn(selected, orderColumn);
+
+        if (selected.Count == 0)
+        {
+            foreach (var column in table.Columns.Take(8))
+                AddColumn(selected, column);
+        }
+
+        return selected.Take(10).ToList();
+    }
+
+    private static void AddColumn(List<ColumnInfo> columns, ColumnInfo column)
+    {
+        if (!columns.Any(existing => string.Equals(existing.Name, column.Name, StringComparison.OrdinalIgnoreCase)))
+            columns.Add(column);
+    }
+
+    private static bool IsNameLikeColumn(ColumnInfo column)
+    {
+        var name = FoldText(column.Name);
+        return name is "name" or "title" or "city" or "city_name" or "cityname" or "stadt" or "stadtname" ||
+               name.EndsWith("_name", StringComparison.Ordinal) ||
+               name.EndsWith("name", StringComparison.Ordinal);
+    }
+
+    private static bool IsNumericColumn(ColumnInfo column)
+    {
+        var type = FoldText(column.DataType);
+        return type.Contains("int", StringComparison.Ordinal) ||
+               type.Contains("decimal", StringComparison.Ordinal) ||
+               type.Contains("numeric", StringComparison.Ordinal) ||
+               type.Contains("number", StringComparison.Ordinal) ||
+               type.Contains("double", StringComparison.Ordinal) ||
+               type.Contains("float", StringComparison.Ordinal) ||
+               type.Contains("real", StringComparison.Ordinal) ||
+               type.Contains("money", StringComparison.Ordinal);
+    }
+
+    private static bool ColumnConceptAppears(ColumnInfo column, string foldedText)
+    {
+        var columnName = FoldText(column.Name);
+
+        if ((columnName.Contains("population", StringComparison.Ordinal) ||
+             columnName.Contains("inhabitant", StringComparison.Ordinal) ||
+             columnName.Contains("einwohner", StringComparison.Ordinal) ||
+             columnName is "pop" or "pop_total") &&
+            ContainsAny(foldedText, "population", "inhabitants", "einwohner", "einwohnerzahl", "bevoelkerung"))
+        {
+            return true;
+        }
+
+        if (IsNameLikeColumn(column) && ContainsAny(foldedText, "name", "namen", "stadtname", "city name", "city_name"))
+            return true;
+
+        return false;
+    }
+
+    private static bool TableConceptAppears(string tableName, string foldedText)
+    {
+        var foldedName = FoldText(tableName);
+        if ((foldedName.Contains("city", StringComparison.Ordinal) ||
+             foldedName.Contains("cities", StringComparison.Ordinal) ||
+             foldedName.Contains("stadt", StringComparison.Ordinal)) &&
+            ContainsAny(foldedText, "city", "cities", "stadt", "staedte"))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static int DetectRequestedLimit(string foldedText, LiveRagQueryRequest request)
+    {
+        var match = Regex.Match(foldedText, @"\btop\s+(\d{1,3})\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (!match.Success)
+            match = Regex.Match(foldedText, @"\blimit\s+(\d{1,3})\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (!match.Success)
+            match = Regex.Match(foldedText, @"\b(\d{1,3})\s+(?:staedte|cities|rows|zeilen|records|eintraege)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (!match.Success)
+            match = NumberRegex.Match(foldedText);
+
+        if (match.Success && int.TryParse(match.Groups[1].Value, out var requested))
+            return Math.Clamp(requested, 1, Math.Max(1, request.MaxResultsPerSearchTerm));
+
+        return Math.Clamp(Math.Min(request.MaxContextItems, request.MaxResultsPerSearchTerm), 1, 50);
+    }
+
+    private static string BuildRetrievalText(LiveRagQueryRequest request)
+    {
+        return string.Join(" ", new[] { request.Question }.Concat(request.SearchTerms));
+    }
+
+    private static bool IdentifierAppears(string foldedText, string identifier)
+    {
+        var foldedIdentifier = FoldText(identifier);
+        if (string.IsNullOrWhiteSpace(foldedIdentifier))
+            return false;
+
+        var escaped = Regex.Escape(foldedIdentifier);
+        if (Regex.IsMatch(foldedText, $@"(?<![a-z0-9_]){escaped}(?![a-z0-9_])", RegexOptions.CultureInvariant))
+            return true;
+
+        var spaced = foldedIdentifier.Replace("_", " ");
+        if (!string.Equals(spaced, foldedIdentifier, StringComparison.Ordinal) &&
+            foldedText.Contains(spaced, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        var singular = ToSimpleSingular(foldedIdentifier);
+        return !string.Equals(singular, foldedIdentifier, StringComparison.Ordinal) &&
+               Regex.IsMatch(foldedText, $@"(?<![a-z0-9_]){Regex.Escape(singular)}(?![a-z0-9_])", RegexOptions.CultureInvariant);
+    }
+
+    private static string ToSimpleSingular(string value)
+    {
+        if (value.EndsWith("ies", StringComparison.Ordinal) && value.Length > 3)
+            return value[..^3] + "y";
+        if (value.EndsWith("s", StringComparison.Ordinal) && value.Length > 2)
+            return value[..^1];
+        return value;
+    }
+
+    private static bool ContainsAny(string text, params string[] candidates)
+    {
+        return candidates.Any(candidate => text.Contains(FoldText(candidate), StringComparison.Ordinal));
+    }
+
+    private static string FoldText(string text)
+    {
+        return LiveRagConnectorHelpers.FoldText(text);
+    }
+
+    private static string BuildRowTitle(Dictionary<string, string> values, string tableName, int rowNumber)
+    {
+        foreach (var preferred in new[] { "name", "title", "city", "city_name", "cityname", "stadt", "stadtname" })
+        {
+            var match = values.FirstOrDefault(kvp => string.Equals(kvp.Key, preferred, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(match.Value) && match.Value != "NULL")
+                return match.Value;
+        }
+
+        var firstValue = values.Values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value) && value != "NULL");
+        return string.IsNullOrWhiteSpace(firstValue)
+            ? $"{tableName} row {rowNumber}"
+            : firstValue.Length > 100 ? firstValue[..100] + "..." : firstValue;
+    }
+
     private async Task<List<SearchResult>> ExecuteCustomQueryAsync(DbConnection connection, string searchTerm, int maxResults, CancellationToken ct)
     {
         var results = new List<SearchResult>();
@@ -632,4 +1607,6 @@ public class SqlDatabaseConnector : IDataSourceConnector, IDisposable
 
     private enum DatabaseType { MSSQL, MySQL, PostgreSQL }
     private class ColumnInfo { public string Name { get; set; } = string.Empty; public string DataType { get; set; } = string.Empty; }
+    private class TableInfo { public string Name { get; set; } = string.Empty; public List<ColumnInfo> Columns { get; set; } = new(); }
+    private sealed record SqlLiveRagPlan(string TableName, string Sql);
 }

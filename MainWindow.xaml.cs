@@ -20,6 +20,7 @@ namespace MSCC
         private readonly ResultDetailView _detailView;
         private readonly ScriptingService _scriptingService;
         private readonly ScriptRepository _scriptRepository;
+        private readonly McpServerService _mcpServerService;
         private bool _isInitialized;
 
         public MainWindow()
@@ -30,6 +31,7 @@ namespace MSCC
             InitializeComponent();
             _viewModel = new MainViewModel();
             DataContext = _viewModel;
+            _mcpServerService = new McpServerService(_viewModel.DataSourceManager);
 
             // Scripting initialisieren
             _scriptingService = new ScriptingService();
@@ -56,6 +58,7 @@ namespace MSCC
 
             // Daten und Scripts beim Start laden
             Loaded += async (s, e) => await InitializeAsync();
+            Closed += (s, e) => _mcpServerService.Dispose();
         }
 
         private async Task InitializeAsync()
@@ -114,6 +117,7 @@ namespace MSCC
                 }
                 
                 _isInitialized = true;
+                await ApplyMcpServerSettingsAsync();
             }
             catch (Exception ex)
             {
@@ -178,6 +182,8 @@ namespace MSCC
             SearchButton.Content = loc.Search;
             AiSearchButton.Content = loc["AiSearch"];
             AiSearchButton.ToolTip = loc["AiSearchTooltip"];
+            LiveRagButton.Content = loc["LiveRagSearch"];
+            LiveRagButton.ToolTip = loc["LiveRagTooltip"];
             CancelSearchButton.Content = loc.Cancel;
             
             // Headers
@@ -202,7 +208,10 @@ namespace MSCC
         private void MenuItem_Settings_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new SettingsDialog { Owner = this };
-            dialog.ShowDialog();
+            if (dialog.ShowDialog() == true)
+            {
+                _ = ApplyMcpServerSettingsAsync();
+            }
         }
 
         private void MenuItem_ScriptManager_Click(object sender, RoutedEventArgs e)
@@ -236,6 +245,28 @@ namespace MSCC
                 Strings.Instance.MenuAbout,
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
+        }
+
+        private async Task ApplyMcpServerSettingsAsync()
+        {
+            var settings = SettingsService.Instance.Settings;
+            if (!settings.McpServerEnabled)
+            {
+                _mcpServerService.Stop();
+                return;
+            }
+
+            var started = await _mcpServerService.StartAsync(settings.McpServerPort);
+            if (!started)
+            {
+                _viewModel.StatusMessage = $"{Strings.Instance.Error}: {Strings.Instance["McpServerStartFailed"]}";
+                return;
+            }
+
+            if (_isInitialized)
+            {
+                _viewModel.StatusMessage = $"{Strings.Instance.Ready} - MCP: {_mcpServerService.EndpointUrl}";
+            }
         }
 
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -364,6 +395,213 @@ namespace MSCC
                     Strings.Instance.Error,
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
+            }
+        }
+
+        private async void LiveRagButton_Click(object sender, RoutedEventArgs e)
+        {
+            var (selectedDataSourceIds, selectedGroupIds) = GetSelectedSearchScope();
+            var selectedSources = ResolveSelectedDataSources(selectedDataSourceIds, selectedGroupIds);
+
+            if (selectedSources.Count == 0)
+            {
+                MessageBox.Show(
+                    Strings.Instance.NoDataSourcesSelected,
+                    Strings.Instance.Warning,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            var dialog = new LiveRagQueryDialog(selectedSources.Count, _viewModel.SearchTerm)
+            {
+                Owner = this
+            };
+
+            if (dialog.ShowDialog() != true)
+                return;
+
+            using var cancellation = new CancellationTokenSource();
+            var aiService = new AiSearchService();
+            var orchestrator = new LiveRagOrchestrator(_viewModel.DataSourceManager, aiService);
+            IProgress<(string query, string sourceName, int contextCount, bool isNativeLiveRag)>? liveProgress = null;
+
+            try
+            {
+                _viewModel.SearchTerm = dialog.Question;
+                _viewModel.StatusMessage = Strings.Instance["LiveRagPlanning"];
+
+                liveProgress = new Progress<(string query, string sourceName, int contextCount, bool isNativeLiveRag)>(p =>
+                {
+                    var mode = p.isNativeLiveRag ? Strings.Instance["LiveRagNativeMode"] : Strings.Instance["LiveRagFallbackMode"];
+                    _viewModel.StatusMessage = string.Format(
+                        Strings.Instance["LiveRagToolContextFrom"],
+                        p.query,
+                        p.sourceName,
+                        p.contextCount,
+                        mode);
+                });
+
+                var context = await orchestrator.GetLiveRagContextAsync(
+                    dialog.Question,
+                    selectedDataSourceIds,
+                    selectedGroupIds,
+                    maxResultsPerOperation: dialog.MaxResultsPerSearchTerm,
+                    maxContextItemsPerSource: dialog.MaxContextItemsPerSource,
+                    maxContextItemsTotal: dialog.MaxContextItemsTotal,
+                    maxCharactersPerItem: dialog.MaxCharactersPerItem,
+                    includeMetadata: dialog.IncludeMetadata,
+                    useAiPlanning: true,
+                    cancellationToken: cancellation.Token,
+                    progress: new Progress<(string sourceName, int contextCount, bool isNativeLiveRag)>(p =>
+                    {
+                        liveProgress.Report((dialog.Question, p.sourceName, p.contextCount, p.isNativeLiveRag));
+                    }),
+                    statusProgress: new Progress<string>(message =>
+                    {
+                        _viewModel.StatusMessage = message;
+                    }));
+
+                DisplayLiveRagContextAsResults(context, selectedDataSourceIds, selectedGroupIds);
+
+                if (context.ContextItems.Count == 0)
+                {
+                    var message = AiSearchService.BuildLiveRagFailureMessage(context);
+                    MessageBox.Show(
+                        message,
+                        Strings.Instance["LiveRagSearch"],
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    _viewModel.StatusMessage = string.Format(
+                        Strings.Instance["LiveRagComplete"],
+                        0);
+                    return;
+                }
+
+                _viewModel.StatusMessage = Strings.Instance["LiveRagAnswering"];
+                var response = await aiService.AnswerLiveRagAsync(
+                    context,
+                    dialog.SystemPrompt,
+                    cancellation.Token);
+                response.LiveRagContext = context;
+                response.ToolCallCount = context.ExecutionTrace.Count(trace => trace.Accepted);
+
+                if (!response.Success)
+                {
+                    MessageBox.Show(
+                        response.ErrorMessage ?? Strings.Instance.Error,
+                        Strings.Instance.Error,
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    _viewModel.StatusMessage = Strings.Instance.Error;
+                    return;
+                }
+
+                var resultWindow = new AiSearchResultWindow(response) { Owner = this };
+                resultWindow.ShowDialog();
+
+                _viewModel.StatusMessage = response.Success
+                    ? string.Format(Strings.Instance["LiveRagComplete"], response.LiveRagContext?.ContextItems.Count ?? 0)
+                    : Strings.Instance.Error;
+            }
+            catch (OperationCanceledException)
+            {
+                _viewModel.StatusMessage = Strings.Instance["LiveRagCancelled"];
+            }
+            catch (Exception ex)
+            {
+                _viewModel.StatusMessage = $"{Strings.Instance.Error}: {ex.Message}";
+                MessageBox.Show(
+                    ex.Message,
+                    Strings.Instance.Error,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        private (List<string> dataSourceIds, List<string> groupIds) GetSelectedSearchScope()
+        {
+            var selectedDataSourceIds = _viewModel.DataSources
+                .Where(ds => ds.IsSelected)
+                .Select(ds => ds.DataSource.Id)
+                .ToList();
+
+            var selectedGroupIds = _viewModel.Groups
+                .Where(g => g.IsSelected)
+                .Select(g => g.Group.Id)
+                .ToList();
+
+            if (selectedDataSourceIds.Count == 0 && selectedGroupIds.Count == 0)
+            {
+                selectedDataSourceIds = _viewModel.DataSources
+                    .Where(ds => ds.DataSource.IsEnabled)
+                    .Select(ds => ds.DataSource.Id)
+                    .ToList();
+            }
+
+            return (selectedDataSourceIds, selectedGroupIds);
+        }
+
+        private static List<DataSource> ResolveSelectedDataSources(
+            IEnumerable<string> dataSourceIds,
+            IEnumerable<string> groupIds)
+        {
+            var resolvedIds = new HashSet<string>(dataSourceIds);
+            foreach (var groupId in groupIds)
+            {
+                foreach (var dataSource in GlobalState.GetDataSourcesByGroup(groupId))
+                {
+                    resolvedIds.Add(dataSource.Id);
+                }
+            }
+
+            return GlobalState.DataSources
+                .Where(ds => ds.IsEnabled && resolvedIds.Contains(ds.Id))
+                .ToList();
+        }
+
+        private void DisplayLiveRagContextAsResults(
+            LiveRagContextResult context,
+            IEnumerable<string> selectedDataSourceIds,
+            IEnumerable<string> selectedGroupIds)
+        {
+            _viewModel.SearchResults.Clear();
+            _viewModel.CurrentQuery = new SearchQuery
+            {
+                SearchTerm = context.Question,
+                SelectedDataSourceIds = selectedDataSourceIds.ToList(),
+                SelectedGroupIds = selectedGroupIds.ToList(),
+                LastExecutedAt = DateTime.Now,
+                Description = "Live RAG"
+            };
+            GlobalState.CurrentQuery = _viewModel.CurrentQuery;
+
+            foreach (var item in context.ContextItems)
+            {
+                var metadata = new Dictionary<string, object>(item.Metadata)
+                {
+                    ["LiveRagRetrievalQuery"] = item.RetrievalQuery ?? string.Empty,
+                    ["LiveRagOperationId"] = item.OperationId ?? string.Empty,
+                    ["LiveRagOperationType"] = item.OperationType?.ToString() ?? string.Empty,
+                    ["LiveRagNative"] = item.FromNativeLiveRag,
+                    ["LiveRagMode"] = context.Mode.ToString(),
+                    ["LiveRagDegradedFallback"] = context.IsDegradedFallback,
+                    ["LiveRagRetrievedAt"] = item.RetrievedAt.ToString("u")
+                };
+
+                var searchResult = new SearchResult
+                {
+                    Title = item.Title,
+                    Description = item.Content,
+                    SourceName = item.SourceName,
+                    ConnectorId = item.ConnectorId,
+                    OriginalReference = item.OriginalReference,
+                    RelevanceScore = item.RelevanceScore,
+                    Metadata = metadata,
+                    FoundAt = item.RetrievedAt
+                };
+
+                _viewModel.SearchResults.Add(new LabelableSearchResult(searchResult));
             }
         }
     }

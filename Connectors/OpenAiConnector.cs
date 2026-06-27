@@ -291,6 +291,32 @@ public class OpenAiConnector : IDataSourceConnector
         return results;
     }
 
+    public bool SupportsLiveRag => true;
+
+    public Task<LiveRagRetrievalResult> RetrieveLiveRagContextAsync(
+        LiveRagQueryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return LiveRagConnectorHelpers.RetrieveFromSearchAsync(
+            this,
+            request,
+            SearchAsync,
+            (result, retrievalQuery, liveRequest) =>
+            {
+                var content = result.Metadata.TryGetValue("FullResponse", out var fullResponse)
+                    ? fullResponse?.ToString() ?? result.Description
+                    : result.Description;
+
+                return LiveRagConnectorHelpers.CreateContextItem(
+                    result,
+                    retrievalQuery,
+                    liveRequest,
+                    content);
+            },
+            native: true,
+            cancellationToken);
+    }
+
     public DetailViewConfiguration GetDetailViewConfiguration(SearchResult result)
     {
         return new DetailViewConfiguration

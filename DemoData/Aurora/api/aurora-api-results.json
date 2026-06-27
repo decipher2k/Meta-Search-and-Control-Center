@@ -1,0 +1,41 @@
+{
+  "results": [
+    {
+      "id": "aur-api-001",
+      "title": "Aurora City Score - Hamburg",
+      "description": "Hamburg has a privacy urgency score of 92 and expected congestion reduction of 10.5 percent.",
+      "url": "https://demo.mscc.local/aurora/cities/hamburg",
+      "city": "Hamburg",
+      "privacyUrgency": 92,
+      "expectedSavingsPercent": 10.5,
+      "owner": "Lena Vogt"
+    },
+    {
+      "id": "aur-api-002",
+      "title": "Aurora City Score - Munich",
+      "description": "Munich has the strongest retail uplift forecast at 7.8 percent with weekend data quality monitoring.",
+      "url": "https://demo.mscc.local/aurora/cities/munich",
+      "city": "Munich",
+      "retailUpliftPercent": 7.8,
+      "owner": "Omar Klein"
+    },
+    {
+      "id": "aur-api-003",
+      "title": "Aurora City Score - Cologne",
+      "description": "Cologne leads grid flexibility with 14.2 MWh of shiftable evening load.",
+      "url": "https://demo.mscc.local/aurora/cities/cologne",
+      "city": "Cologne",
+      "gridFlexMwh": 14.2,
+      "owner": "Priya Raman"
+    },
+    {
+      "id": "aur-api-004",
+      "title": "Aurora City Score - Berlin",
+      "description": "Berlin has the highest governance complexity and needs a consolidated launch review pack.",
+      "url": "https://demo.mscc.local/aurora/cities/berlin",
+      "city": "Berlin",
+      "coordinationRisk": "High",
+      "owner": "Mara Stein"
+    }
+  ]
+}

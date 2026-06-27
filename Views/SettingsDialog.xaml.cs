@@ -1,4 +1,4 @@
-//Meta Search and Control Center (c) 2026 Dennis Michael Heine
+ï»¿//Meta Search and Control Center (c) 2026 Dennis Michael Heine
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,7 +8,7 @@ using MSCC.Services;
 namespace MSCC.Views;
 
 /// <summary>
-/// Dialog für Anwendungseinstellungen.
+/// Dialog fÃ¼r Anwendungseinstellungen.
 /// </summary>
 public partial class SettingsDialog : Window
 {
@@ -53,6 +53,12 @@ public partial class SettingsDialog : Window
         AiApiKeyLabel.Text = loc["AiApiKey"];
         AiModelLabel.Text = loc["AiModel"];
         AiModelHint.Text = loc["AiModelHint"];
+
+        // MCP localization
+        McpServerHeader.Text = loc["McpServer"];
+        McpServerEnabledCheckBox.Content = loc["McpServerEnabled"];
+        McpServerPortLabel.Text = loc["McpServerPort"];
+        UpdateMcpEndpointHint();
     }
 
     private void LoadSettings()
@@ -60,7 +66,7 @@ public partial class SettingsDialog : Window
         // Sprachen laden
         LanguageComboBox.ItemsSource = Strings.SupportedLanguages;
         
-        // Aktuelle Sprache auswählen
+        // Aktuelle Sprache auswÃ¤hlen
         var currentLang = Strings.SupportedLanguages.FirstOrDefault(l => l.Code == _settingsService.Settings.Language);
         LanguageComboBox.SelectedItem = currentLang ?? Strings.SupportedLanguages.First();
         
@@ -72,13 +78,18 @@ public partial class SettingsDialog : Window
         AiApiEndpointTextBox.Text = _settingsService.Settings.AiApiEndpoint;
         AiApiKeyPasswordBox.Password = _settingsService.Settings.AiApiKey;
         AiModelTextBox.Text = _settingsService.Settings.AiModel;
+
+        // MCP Server Einstellungen
+        McpServerEnabledCheckBox.IsChecked = _settingsService.Settings.McpServerEnabled;
+        McpServerPortTextBox.Text = _settingsService.Settings.McpServerPort.ToString();
+        McpServerPortTextBox.TextChanged += (_, _) => UpdateMcpEndpointHint();
     }
 
     private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (LanguageComboBox.SelectedItem is LanguageInfo selectedLang)
         {
-            // Sprache sofort wechseln für Live-Vorschau
+            // Sprache sofort wechseln fÃ¼r Live-Vorschau
             Strings.SetLanguage(selectedLang.Code);
             
             _languageChanged = selectedLang.Code != _originalLanguage;
@@ -102,6 +113,21 @@ public partial class SettingsDialog : Window
         _settingsService.Settings.AiApiEndpoint = AiApiEndpointTextBox.Text.Trim();
         _settingsService.Settings.AiApiKey = AiApiKeyPasswordBox.Password;
         _settingsService.Settings.AiModel = AiModelTextBox.Text.Trim();
+
+        if (!int.TryParse(McpServerPortTextBox.Text.Trim(), out var mcpPort) ||
+            mcpPort < 1024 ||
+            mcpPort > 65535)
+        {
+            MessageBox.Show(
+                Strings.Instance["McpServerPortInvalid"],
+                Strings.Instance.ValidationError,
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        _settingsService.Settings.McpServerEnabled = McpServerEnabledCheckBox.IsChecked ?? true;
+        _settingsService.Settings.McpServerPort = mcpPort;
         
         _settingsService.Save();
         
@@ -111,7 +137,7 @@ public partial class SettingsDialog : Window
 
     private void CancelButton_Click(object sender, RoutedEventArgs e)
     {
-        // Sprache zurücksetzen wenn geändert
+        // Sprache zurÃ¼cksetzen wenn geÃ¤ndert
         if (_languageChanged)
         {
             Strings.SetLanguage(_originalLanguage);
@@ -119,5 +145,14 @@ public partial class SettingsDialog : Window
         
         DialogResult = false;
         Close();
+    }
+
+    private void UpdateMcpEndpointHint()
+    {
+        var port = McpServerPortTextBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(port))
+            port = _settingsService.Settings.McpServerPort.ToString();
+
+        McpServerEndpointHint.Text = $"{Strings.Instance["McpServerEndpoint"]}: http://localhost:{port}/mcp";
     }
 }

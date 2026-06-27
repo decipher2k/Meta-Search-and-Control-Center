@@ -1,4 +1,4 @@
-//Meta Search and Control Center (c) 2026 Dennis Michael Heine
+ï»¿//Meta Search and Control Center (c) 2026 Dennis Michael Heine
 using MSCC.Models;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,7 +7,7 @@ using System.Windows.Media;
 namespace MSCC.Connectors;
 
 /// <summary>
-/// Mock-Datenbank-Konnektor für Demonstrationszwecke.
+/// Mock-Datenbank-Konnektor fÃ¼r Demonstrationszwecke.
 /// Simuliert eine Datenbanksuche mit Beispieldaten.
 /// </summary>
 public class MockDatabaseConnector : IDataSourceConnector, IDisposable
@@ -18,7 +18,7 @@ public class MockDatabaseConnector : IDataSourceConnector, IDisposable
 
     public string Id => "mock-database-connector";
     public string Name => "Datenbank (Mock)";
-    public string Description => "Simuliert eine Datenbankabfrage für Demonstrationszwecke.";
+    public string Description => "Simuliert eine Datenbankabfrage fÃ¼r Demonstrationszwecke.";
     public string Version => "1.0.0";
 
     public IEnumerable<ConnectorParameter> ConfigurationParameters => new[]
@@ -69,7 +69,7 @@ public class MockDatabaseConnector : IDataSourceConnector, IDisposable
             new() { ["Id"] = 1, ["Name"] = "Projektbericht Q1 2024", ["Category"] = "Berichte", ["Author"] = "Max Mustermann" },
             new() { ["Id"] = 2, ["Name"] = "Kundendatenanalyse", ["Category"] = "Analysen", ["Author"] = "Anna Schmidt" },
             new() { ["Id"] = 3, ["Name"] = "Technische Dokumentation API", ["Category"] = "Dokumentation", ["Author"] = "Peter Weber" },
-            new() { ["Id"] = 4, ["Name"] = "Marketingstrategie 2024", ["Category"] = "Strategien", ["Author"] = "Lisa Müller" },
+            new() { ["Id"] = 4, ["Name"] = "Marketingstrategie 2024", ["Category"] = "Strategien", ["Author"] = "Lisa MÃ¼ller" },
             new() { ["Id"] = 5, ["Name"] = "Budgetplanung Entwicklung", ["Category"] = "Finanzen", ["Author"] = "Thomas Fischer" },
             new() { ["Id"] = 6, ["Name"] = "Serverarchitektur Diagramm", ["Category"] = "Technisch", ["Author"] = "Julia Klein" },
             new() { ["Id"] = 7, ["Name"] = "Mitarbeiterschulung Datenschutz", ["Category"] = "HR", ["Author"] = "Michael Braun" },
@@ -119,6 +119,25 @@ public class MockDatabaseConnector : IDataSourceConnector, IDisposable
         return Task.FromResult<IEnumerable<SearchResult>>(results);
     }
 
+    public bool SupportsLiveRag => true;
+
+    public Task<LiveRagRetrievalResult> RetrieveLiveRagContextAsync(
+        LiveRagQueryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return LiveRagConnectorHelpers.RetrieveFromSearchAsync(
+            this,
+            request,
+            SearchAsync,
+            (result, retrievalQuery, liveRequest) => LiveRagConnectorHelpers.CreateContextItem(
+                result,
+                retrievalQuery,
+                liveRequest,
+                LiveRagConnectorHelpers.BuildMetadataContent(result)),
+            native: true,
+            cancellationToken);
+    }
+
     private static int CalculateRelevance(string searchTerm, string name, string category, string author)
     {
         if (name.Equals(searchTerm, StringComparison.OrdinalIgnoreCase))
@@ -159,7 +178,7 @@ public class MockDatabaseConnector : IDataSourceConnector, IDisposable
             },
             Actions = new List<ResultAction>
             {
-                new() { Id = "view-details", Name = "Details anzeigen", Icon = "??", Description = "Vollständige Datensatz-Details" },
+                new() { Id = "view-details", Name = "Details anzeigen", Icon = "??", Description = "VollstÃ¤ndige Datensatz-Details" },
                 new() { Id = "export", Name = "Exportieren", Icon = "??", Description = "Datensatz als JSON exportieren" },
                 new() { Id = "show-chart", Name = "Als Chart", Icon = "??", Description = "Daten als Chart visualisieren" }
             },
@@ -250,7 +269,7 @@ public class MockDatabaseConnector : IDataSourceConnector, IDisposable
                     case "show-chart":
                         System.Windows.Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBox.Show("Chart-Ansicht wird in einer späteren Version implementiert.", "Chart", MessageBoxButton.OK, MessageBoxImage.Information);
+                            MessageBox.Show("Chart-Ansicht wird in einer spÃ¤teren Version implementiert.", "Chart", MessageBoxButton.OK, MessageBoxImage.Information);
                         });
                         return true;
                 }

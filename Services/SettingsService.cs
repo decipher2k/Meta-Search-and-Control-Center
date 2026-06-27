@@ -1,4 +1,4 @@
-//Meta Search and Control Center (c) 2026 Dennis Michael Heine
+﻿//Meta Search and Control Center (c) 2026 Dennis Michael Heine
 using System.IO;
 using System.Text.Json;
 
@@ -21,6 +21,10 @@ public class AppSettings
     public string AiApiEndpoint { get; set; } = "https://api.openai.com/v1/chat/completions";
     public string AiApiKey { get; set; } = "";
     public string AiModel { get; set; } = "gpt-3.5-turbo";
+
+    // MCP Server Settings
+    public bool McpServerEnabled { get; set; } = true;
+    public int McpServerPort { get; set; } = 37620;
 }
 
 /// <summary>
@@ -52,7 +56,7 @@ public class SettingsService
     }
 
     /// <summary>
-    /// L�dt die Einstellungen aus der Datei.
+    /// Lädt die Einstellungen aus der Datei.
     /// </summary>
     public AppSettings Load()
     {

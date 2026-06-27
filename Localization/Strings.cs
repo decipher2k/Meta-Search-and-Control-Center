@@ -79,7 +79,12 @@ public class Strings : INotifyPropertyChanged
 
     private static string GetString(string key)
     {
-        return _currentResources.TryGetValue(key, out var value) ? value : key;
+        if (_currentResources.TryGetValue(key, out var value))
+            return value;
+
+        return Strings_en.Resources.TryGetValue(key, out var fallback)
+            ? fallback
+            : key;
     }
 
     /// <summary>

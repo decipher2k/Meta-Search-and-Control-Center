@@ -1,0 +1,24 @@
+{
+  "calendar": [
+    {
+      "subject": "Project Aurora Launch Review",
+      "start": "2026-08-12T10:00:00+02:00",
+      "attendees": ["Lena Vogt", "Omar Klein", "Priya Raman", "Mara Stein"],
+      "notes": "Review Hamburg privacy evidence, Munich revenue story, Cologne grid telemetry and Berlin governance package."
+    }
+  ],
+  "todo": [
+    {
+      "title": "Close AUR-R1 privacy evidence",
+      "owner": "Lena Vogt",
+      "due": "2026-08-05",
+      "status": "open"
+    },
+    {
+      "title": "Confirm Munich merchant validation sample",
+      "owner": "Omar Klein",
+      "due": "2026-08-09",
+      "status": "open"
+    }
+  ]
+}

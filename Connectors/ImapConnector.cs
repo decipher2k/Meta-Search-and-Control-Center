@@ -359,6 +359,32 @@ public class ImapConnector : IDataSourceConnector
         return results;
     }
 
+    public bool SupportsLiveRag => true;
+
+    public Task<LiveRagRetrievalResult> RetrieveLiveRagContextAsync(
+        LiveRagQueryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return LiveRagConnectorHelpers.RetrieveFromSearchAsync(
+            this,
+            request,
+            SearchAsync,
+            (result, retrievalQuery, liveRequest) =>
+            {
+                var content = result.Metadata.TryGetValue("FullBody", out var body)
+                    ? body?.ToString() ?? result.Description
+                    : result.Description;
+
+                return LiveRagConnectorHelpers.CreateContextItem(
+                    result,
+                    retrievalQuery,
+                    liveRequest,
+                    content);
+            },
+            native: true,
+            cancellationToken);
+    }
+
     private static string GetBodyPreview(MimeMessage message, int maxLength)
     {
         var body = message.TextBody ?? message.HtmlBody ?? "";

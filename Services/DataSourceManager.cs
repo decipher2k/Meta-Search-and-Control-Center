@@ -229,6 +229,7 @@ public class DataSourceManager
         RegisterConnector(new SqlDatabaseConnector());
         RegisterConnector(new OpenAiConnector());
         RegisterConnector(new ImapConnector());
+        RegisterConnector(new GenericApiConnector());
     }
 
     /// <summary>
@@ -237,6 +238,12 @@ public class DataSourceManager
     public async Task LoadSavedDataSourcesAsync()
     {
         await GlobalState.LoadStateAsync();
+
+        var installedDemoData = DemoDataInstaller.EnsureAuroraDemoDataSources();
+        if (installedDemoData)
+        {
+            await GlobalState.SaveStateAsync();
+        }
 
         // Initialisiere Konnektoren für alle geladenen Datenquellen
         foreach (var dataSource in GlobalState.DataSources.ToList())
@@ -277,28 +284,31 @@ public class DataSourceManager
         // Bekannte Konnektoren
         if (template is FileSystemConnector)
             return new FileSystemConnector();
-        
+
         if (template is FindInFilesConnector)
             return new FindInFilesConnector();
-        
+
         if (template is MockDatabaseConnector)
             return new MockDatabaseConnector();
-        
+
         if (template is MicrosoftGraphConnector)
             return new MicrosoftGraphConnector();
-        
+
         if (template is DuckDuckGoConnector)
             return new DuckDuckGoConnector();
-        
+
         if (template is SqlDatabaseConnector)
             return new SqlDatabaseConnector();
-        
+
         if (template is OpenAiConnector)
             return new OpenAiConnector();
-        
+
         if (template is ImapConnector)
             return new ImapConnector();
-        
+
+        if (template is GenericApiConnector)
+            return new GenericApiConnector();
+
         // Gescriptete Konnektoren - versuche neue Instanz über Reflection zu erstellen
         if (template is ScriptedConnectorBase)
         {
@@ -349,7 +359,7 @@ public class DataSourceManager
 
         if (name != null)
             dataSource.Name = name;
-        
+
         if (groupId != null)
             dataSource.GroupId = groupId == string.Empty ? null : groupId;
 

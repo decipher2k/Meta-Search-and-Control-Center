@@ -1,6 +1,7 @@
 //Meta Search and Control Center (c) 2026 Dennis Michael Heine
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -318,6 +319,9 @@ public class GenericApiConnector : IDataSourceConnector
     {
         try
         {
+            if (TryGetLocalFilePath(out var localPath))
+                return File.Exists(localPath);
+
             var url = BuildUrl("test");
             using var request = new HttpRequestMessage(new HttpMethod(_httpMethod), url);
             await ApplyAuthenticationAsync(request, "test");
@@ -347,6 +351,13 @@ public class GenericApiConnector : IDataSourceConnector
 
         try
         {
+            if (TryGetLocalFilePath(out var localPath))
+            {
+                var localResponseContent = await File.ReadAllTextAsync(localPath, cancellationToken);
+                results.AddRange(ParseResults(localResponseContent, searchTerm, maxResults));
+                return results;
+            }
+
             var url = BuildUrl(searchTerm);
             using var request = new HttpRequestMessage(new HttpMethod(_httpMethod), url);
             await ApplyAuthenticationAsync(request, searchTerm);
@@ -405,6 +416,54 @@ public class GenericApiConnector : IDataSourceConnector
         }
 
         return results;
+    }
+
+    private bool TryGetLocalFilePath(out string localPath)
+    {
+        localPath = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(_apiEndpoint))
+            return false;
+
+        if (Uri.TryCreate(_apiEndpoint, UriKind.Absolute, out var uri) && uri.IsFile)
+        {
+            localPath = uri.LocalPath;
+            return true;
+        }
+
+        if (File.Exists(_apiEndpoint))
+        {
+            localPath = _apiEndpoint;
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool SupportsLiveRag => true;
+
+    public Task<LiveRagRetrievalResult> RetrieveLiveRagContextAsync(
+        LiveRagQueryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return LiveRagConnectorHelpers.RetrieveFromSearchAsync(
+            this,
+            request,
+            SearchAsync,
+            (result, retrievalQuery, liveRequest) =>
+            {
+                var content = result.Metadata.TryGetValue("RawResponse", out var rawResponse)
+                    ? rawResponse?.ToString() ?? result.Description
+                    : LiveRagConnectorHelpers.BuildMetadataContent(result);
+
+                return LiveRagConnectorHelpers.CreateContextItem(
+                    result,
+                    retrievalQuery,
+                    liveRequest,
+                    content);
+            },
+            native: true,
+            cancellationToken);
     }
 
     private string BuildUrl(string searchTerm)

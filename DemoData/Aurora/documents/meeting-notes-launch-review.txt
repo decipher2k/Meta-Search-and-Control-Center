@@ -1,0 +1,16 @@
+Project Aurora Launch Review Notes
+
+Date: 2026-07-22
+Participants: Lena Vogt, Omar Klein, Priya Raman, Mara Stein, Jonas Richter
+
+Decisions:
+- Keep Hamburg in controlled pilot mode until Civic Data Trust signs off.
+- Use Munich as primary revenue uplift story in the public dashboard.
+- Cologne can provide the first grid flexibility case study.
+- Berlin needs a consolidated approval package before any public launch claim.
+
+Open actions:
+- Lena: deliver Hamburg privacy review evidence by 2026-08-05.
+- Omar: confirm Munich merchant validation sample by 2026-08-09.
+- Priya: document stale forecast handling for Cologne telemetry.
+- Mara: draft Berlin stakeholder map and launch review pack.

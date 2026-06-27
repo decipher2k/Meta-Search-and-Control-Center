@@ -279,6 +279,34 @@ public class FileSystemConnectorTests
     }
 
     [Test]
+    public async Task LiveRag_FreeTextQuestion_FindsContentKeyword()
+    {
+        File.WriteAllText(
+            Path.Combine(_testDir, "incident-notes.txt"),
+            "The Neptune migration budget was approved after the architecture review.");
+
+        await _connector.InitializeAsync(new Dictionary<string, string>
+        {
+            ["BasePath"] = _testDir,
+            ["SearchPattern"] = "*.txt"
+        });
+
+        var result = await _connector.RetrieveLiveRagContextAsync(new LiveRagQueryRequest
+        {
+            Question = "Kannst du mir bitte die Notizen zur Neptune Migration zeigen?",
+            MaxSearchTerms = 10,
+            MaxResultsPerSearchTerm = 10,
+            MaxContextItems = 5,
+            MaxCharactersPerItem = 1000,
+            IncludeMetadata = true
+        });
+
+        Assert.That(result.ContextItems, Is.Not.Empty);
+        Assert.That(result.ContextItems.Any(item => item.Content.Contains("Neptune", StringComparison.OrdinalIgnoreCase)), Is.True);
+        Assert.That(result.ExecutedQueries.Any(query => query.Contains("Neptune", StringComparison.OrdinalIgnoreCase)), Is.True);
+    }
+
+    [Test]
     public async Task Search_IncludesSubdirectories()
     {
         // Erstelle Unterverzeichnis mit Datei

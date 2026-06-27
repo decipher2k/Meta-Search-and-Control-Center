@@ -26,6 +26,63 @@ public abstract class ScriptedConnectorBase : IDataSourceConnector
         int maxResults = 100,
         CancellationToken cancellationToken = default);
 
+    public virtual bool SupportsLiveRag => false;
+
+    public virtual async Task<LiveRagRetrievalResult> RetrieveLiveRagContextAsync(
+        LiveRagQueryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var searchTerms = LiveRagConnectorHelpers.GetSearchTerms(request);
+
+        var result = new LiveRagRetrievalResult
+        {
+            IsNativeLiveRag = false,
+            SourceName = Name,
+            ConnectorId = Id
+        };
+
+        var seenReferences = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var searchTerm in searchTerms
+            .Where(term => !string.IsNullOrWhiteSpace(term))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(Math.Max(1, request.MaxSearchTerms)))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            result.ExecutedQueries.Add(searchTerm);
+
+            var rawResults = await SearchAsync(
+                searchTerm,
+                Math.Max(1, request.MaxResultsPerSearchTerm),
+                cancellationToken);
+
+            foreach (var searchResult in rawResults)
+            {
+                var referenceKey = string.IsNullOrWhiteSpace(searchResult.OriginalReference)
+                    ? $"{searchResult.ConnectorId}:{searchResult.Title}:{searchResult.Description}"
+                    : searchResult.OriginalReference;
+
+                if (!seenReferences.Add(referenceKey))
+                    continue;
+
+                result.ContextItems.Add(LiveRagContextItem.FromSearchResult(
+                    searchResult,
+                    searchTerm,
+                    request.MaxCharactersPerItem,
+                    request.IncludeMetadata));
+
+                if (result.ContextItems.Count >= Math.Max(1, request.MaxContextItems))
+                    return result;
+            }
+        }
+
+        result.ContextItems = result.ContextItems
+            .OrderByDescending(item => item.RelevanceScore)
+            .ToList();
+
+        return result;
+    }
+
     public virtual Task<bool> TestConnectionAsync() => Task.FromResult(true);
 
     public virtual DetailViewConfiguration GetDetailViewConfiguration(SearchResult result)

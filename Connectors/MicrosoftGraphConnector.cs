@@ -194,6 +194,36 @@ public class MicrosoftGraphConnector : IDataSourceConnector, IDisposable
         return results.Take(maxResults);
     }
 
+    public bool SupportsLiveRag => true;
+
+    public Task<LiveRagRetrievalResult> RetrieveLiveRagContextAsync(
+        LiveRagQueryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return LiveRagConnectorHelpers.RetrieveFromSearchAsync(
+            this,
+            request,
+            SearchAsync,
+            (result, retrievalQuery, liveRequest) =>
+            {
+                var content = LiveRagConnectorHelpers.BuildMetadataContent(
+                    result,
+                    "WebLink",
+                    "EventId",
+                    "TaskId",
+                    "MessageId",
+                    "PageId");
+
+                return LiveRagConnectorHelpers.CreateContextItem(
+                    result,
+                    retrievalQuery,
+                    liveRequest,
+                    content);
+            },
+            native: true,
+            cancellationToken);
+    }
+
     private async Task<List<SearchResult>> SearchCalendarAsync(string searchTerm, int maxResults, CancellationToken ct)
     {
         var results = new List<SearchResult>();

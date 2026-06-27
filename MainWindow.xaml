@@ -78,6 +78,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 
                 <TextBox Grid.Column="0" 
@@ -114,6 +115,18 @@
                         ToolTip="Analyze search results with AI"/>
                 
                 <Button Grid.Column="3" 
+                        x:Name="LiveRagButton"
+                        Content="Live RAG"
+                        Click="LiveRagButton_Click"
+                        Margin="8,0,0,0"
+                        Padding="20,8"
+                        FontSize="14"
+                        Background="#16A085"
+                        Foreground="White"
+                        BorderThickness="0"
+                        ToolTip="Ask selected data sources with live RAG"/>
+
+                <Button Grid.Column="4"
                         x:Name="CancelSearchButton"
                         Content="Cancel" 
                         Command="{Binding CancelSearchCommand}"

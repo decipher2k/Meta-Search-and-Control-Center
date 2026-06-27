@@ -1,6 +1,7 @@
 // Meta Search and Control Center (c) 2026 Dennis Michael Heine
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using MSCC.Localization;
@@ -215,6 +216,68 @@ public class FindInFilesConnector : IDataSourceConnector, IDisposable
         }, cancellationToken);
 
         return results;
+    }
+
+    public bool SupportsLiveRag => true;
+
+    public Task<LiveRagRetrievalResult> RetrieveLiveRagContextAsync(
+        LiveRagQueryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return LiveRagConnectorHelpers.RetrieveFromSearchAsync(
+            this,
+            request,
+            SearchAsync,
+            CreateLiveRagContextItem,
+            native: true,
+            cancellationToken);
+    }
+
+    public Task<LiveRagSourceProfile> DescribeLiveRagCapabilitiesAsync(
+        DataSource dataSource,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new LiveRagSourceProfile
+        {
+            DataSourceId = dataSource.Id,
+            SourceName = dataSource.Name,
+            ConnectorId = Id,
+            Description = dataSource.Description,
+            SupportsNativeLiveRag = true,
+            SupportedOperations =
+            [
+                LiveRagOperationType.ContentScan,
+                LiveRagOperationType.KeywordSearch,
+                LiveRagOperationType.FilteredFetch
+            ],
+            Fields = ["fileName", "path", "line", "column", "lineContent", "extension", "modified"],
+            MaxOperations = 3,
+            MaxResults = 50
+        });
+    }
+
+    private static LiveRagContextItem CreateLiveRagContextItem(
+        SearchResult result,
+        string? retrievalQuery,
+        LiveRagQueryRequest request)
+    {
+        var content = new StringBuilder();
+        content.AppendLine(result.Description);
+
+        if (result.Metadata.TryGetValue(Strings.Instance.Connector_FindInFiles_Matches, out var matchesObj) &&
+            matchesObj is List<FileMatch> matches)
+        {
+            foreach (var match in matches.Take(30))
+            {
+                content.AppendLine($"Line {match.Line}, column {match.Column}: {match.LineContent}");
+            }
+        }
+
+        return LiveRagConnectorHelpers.CreateContextItem(
+            result,
+            retrievalQuery,
+            request,
+            content.ToString());
     }
 
     private List<FileMatch> SearchInFile(string filePath, string searchTerm, Regex? regex, CancellationToken cancellationToken)

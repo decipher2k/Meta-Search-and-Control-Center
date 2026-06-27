@@ -1,4 +1,4 @@
-//Meta Search and Control Center (c) 2026 Dennis Michael Heine
+ï»¿//Meta Search and Control Center (c) 2026 Dennis Michael Heine
 using System.IO;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
@@ -92,7 +92,7 @@ public class ScriptingService
     }
 
     /// <summary>
-    /// Validiert ein Script ohne vollständige Kompilierung.
+    /// Validiert ein Script ohne vollstÃ¤ndige Kompilierung.
     /// </summary>
     public List<CompilationError> Validate(string sourceCode)
     {
@@ -131,7 +131,7 @@ public class ScriptingService
     }
 
     /// <summary>
-    /// Holt Code-Completion-Vorschläge.
+    /// Holt Code-Completion-VorschlÃ¤ge.
     /// </summary>
     public async Task<List<ScriptCompletionItem>> GetCompletionsAsync(string sourceCode, int position)
     {
@@ -242,7 +242,7 @@ public class ScriptingService
     }
 
     /// <summary>
-    /// Generiert ein Template für ein neues Konnektor-Script.
+    /// Generiert ein Template fÃ¼r ein neues Konnektor-Script.
     /// </summary>
     public static string GetScriptTemplate(string connectorName, string connectorId)
     {
@@ -290,7 +290,7 @@ namespace MSCC.Scripts
                 results.Add(new SearchResult
                 {{
                     Title = $""Ergebnis {{i}}: {{searchTerm}}"",
-                    Description = $""Beschreibung für Ergebnis {{i}}"",
+                    Description = $""Beschreibung fÃ¼r Ergebnis {{i}}"",
                     SourceName = Name,
                     ConnectorId = Id,
                     OriginalReference = $""ref-{{i}}"",
@@ -308,7 +308,44 @@ namespace MSCC.Scripts
             return results;
         }}
 
-        // Konfiguriert die Detailansicht für Suchergebnisse
+        // Optional: native Live-RAG-Unterstuetzung fuer natuerlichsprachliche KI-Abfragen.
+        // Setzen Sie SupportsLiveRag auf true, wenn der Fallback durch semantische Suche,
+        // Vektor-Retrieval oder einen datenquellenspezifischen RAG-Endpunkt ersetzt wurde.
+        public override bool SupportsLiveRag => false;
+
+        public override async Task<LiveRagRetrievalResult> RetrieveLiveRagContextAsync(
+            LiveRagQueryRequest request, CancellationToken cancellationToken = default)
+        {{
+            var result = new LiveRagRetrievalResult
+            {{
+                IsNativeLiveRag = SupportsLiveRag,
+                SourceName = Name,
+                ConnectorId = Id
+            }};
+
+            result.ExecutedQueries.Add(request.Question);
+
+            var fallbackResults = await SearchAsync(
+                request.Question,
+                request.MaxResultsPerSearchTerm,
+                cancellationToken);
+
+            foreach (var searchResult in fallbackResults.Take(request.MaxContextItems))
+            {{
+                var contextItem = LiveRagContextItem.FromSearchResult(
+                    searchResult,
+                    request.Question,
+                    request.MaxCharactersPerItem,
+                    request.IncludeMetadata);
+
+                contextItem.FromNativeLiveRag = SupportsLiveRag;
+                result.ContextItems.Add(contextItem);
+            }}
+
+            return result;
+        }}
+
+        // Konfiguriert die Detailansicht fÃ¼r Suchergebnisse
         public override DetailViewConfiguration GetDetailViewConfiguration(SearchResult result)
         {{
             return new DetailViewConfiguration
@@ -318,23 +355,23 @@ namespace MSCC.Scripts
                 // Welche Metadaten-Eigenschaften angezeigt werden
                 DisplayProperties = new List<string> {{ ""Author"", ""CreatedDate"", ""Category"" }},
                 
-                // Verfügbare Aktionen
+                // VerfÃ¼gbare Aktionen
                 Actions = new List<ResultAction>
                 {{
-                    new ResultAction {{ Id = ""open"", Name = ""Öffnen"", Icon = ""??"" }},
+                    new ResultAction {{ Id = ""open"", Name = ""Ã–ffnen"", Icon = ""??"" }},
                     new ResultAction {{ Id = ""copy"", Name = ""Kopieren"", Icon = ""??"" }}
                 }}
             }};
         }}
 
-        // Führt eine Aktion auf einem Suchergebnis aus
+        // FÃ¼hrt eine Aktion auf einem Suchergebnis aus
         public override Task<bool> ExecuteActionAsync(SearchResult result, string actionId)
         {{
             switch (actionId)
             {{
                 case ""open"":
-                    // TODO: Öffnen-Logik implementieren
-                    Log($""Öffne: {{result.OriginalReference}}"");
+                    // TODO: Ã–ffnen-Logik implementieren
+                    Log($""Ã–ffne: {{result.OriginalReference}}"");
                     return Task.FromResult(true);
                     
                 case ""copy"":
