@@ -239,8 +239,9 @@ public class DataSourceManager
     {
         await GlobalState.LoadStateAsync();
 
+        var removedLegacyTestDataSources = RemoveLegacyTestDataSources();
         var installedDemoData = DemoDataInstaller.EnsureAuroraDemoDataSources();
-        if (installedDemoData)
+        if (installedDemoData || removedLegacyTestDataSources)
         {
             await GlobalState.SaveStateAsync();
         }
@@ -271,6 +272,42 @@ public class DataSourceManager
         }
     }
 
+    private static bool RemoveLegacyTestDataSources()
+    {
+        var namesToRemove = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "MCP Test Files",
+            "sdfsdf",
+            "asdasdasd"
+        };
+
+        var idsToRemove = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "9e92f5cb-f25a-4e5b-8998-531eee077b88",
+            "7946dac6-fd19-46bc-b26c-82fcf6222e93",
+            "dbcbe116-e1a1-46e0-9493-ad6a75baeff3"
+        };
+
+        var dataSourcesToRemove = GlobalState.DataSources
+            .Where(source => namesToRemove.Contains(source.Name) || idsToRemove.Contains(source.Id))
+            .ToList();
+
+        if (dataSourcesToRemove.Count == 0)
+            return false;
+
+        foreach (var dataSource in dataSourcesToRemove)
+        {
+            idsToRemove.Add(dataSource.Id);
+            GlobalState.DataSources.Remove(dataSource);
+        }
+
+        foreach (var query in GlobalState.Queries)
+        {
+            query.SelectedDataSourceIds.RemoveAll(id => idsToRemove.Contains(id));
+        }
+
+        return true;
+    }
     /// <summary>
     /// Speichert den aktuellen Zustand.
     /// </summary>
