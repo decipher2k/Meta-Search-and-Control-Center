@@ -22,6 +22,7 @@ namespace MSCC
         private readonly ScriptRepository _scriptRepository;
         private readonly McpServerService _mcpServerService;
         private bool _isInitialized;
+        private bool _isAutoAnalyzingKeywordResults;
 
         public MainWindow()
         {
@@ -43,6 +44,7 @@ namespace MSCC
 
             // Subscribe to property changes for detail view updates
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+            _viewModel.KeywordSearchCompleted += OnKeywordSearchCompleted;
 
             // Subscribe to dialog events
             _viewModel.AddDataSourceRequested += OnAddDataSourceRequested;
@@ -179,12 +181,9 @@ namespace MSCC
             MenuAbout.Header = loc.MenuAbout;
             
             // Search
-            SearchButton.Content = loc.Search;
-            AiSearchButton.Content = loc["AiSearch"];
-            AiSearchButton.ToolTip = loc["AiSearchTooltip"];
-            LiveRagButton.Content = loc["LiveRagSearch"];
-            LiveRagButton.ToolTip = loc["LiveRagTooltip"];
-            CancelSearchButton.Content = loc.Cancel;
+            SearchButton.Content = "Keyword Search";
+            AiSearchButton.Content = "AI Search";
+            AiSearchButton.ToolTip = loc["LiveRagTooltip"];
             
             // Headers
             GroupsHeader.Text = loc.Groups;
@@ -334,71 +333,49 @@ namespace MSCC
             }
         }
         
-        private async void AiSearchButton_Click(object sender, RoutedEventArgs e)
+        private async void OnKeywordSearchCompleted(IReadOnlyList<SearchResult> results, string query)
         {
-            // First, execute normal search if search term is provided but no results yet
-            if (!string.IsNullOrWhiteSpace(_viewModel.SearchTerm) && _viewModel.SearchResults.Count == 0)
-            {
-                if (_viewModel.SearchCommand.CanExecute(null))
-                {
-                    _viewModel.SearchCommand.Execute(null);
-                    
-                    // Wait for search to complete
-                    while (_viewModel.IsSearching)
-                    {
-                        await Task.Delay(100);
-                    }
-                }
-            }
-            
-            var results = _viewModel.SearchResults.Select(r => r.Result).ToList();
-            
-            if (results.Count == 0)
-            {
-                MessageBox.Show(
-                    Strings.Instance["AiNoResults"],
-                    Strings.Instance.Warning,
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+            await AutoAnalyzeKeywordResultsAsync(results, query);
+        }
+
+        private async Task AutoAnalyzeKeywordResultsAsync(IReadOnlyList<SearchResult> results, string query)
+        {
+            if (_isAutoAnalyzingKeywordResults || results.Count == 0 || !AiSearchService.HasConfiguredAiSettings())
                 return;
-            }
-            
-            // Show prompt dialog
-            var promptDialog = new AiSearchPromptDialog(results.Count) { Owner = this };
-            if (promptDialog.ShowDialog() != true)
-                return;
-            
-            // Show loading status
+
+            _isAutoAnalyzingKeywordResults = true;
             _viewModel.StatusMessage = Strings.Instance["AiAnalyzing"];
-            
+
             try
             {
                 var aiService = new AiSearchService();
                 var response = await aiService.AnalyzeResultsAsync(
                     results,
-                    promptDialog.SystemPrompt,
-                    _viewModel.SearchTerm);
-                
-                // Show result window
-                var resultWindow = new AiSearchResultWindow(response) { Owner = this };
-                resultWindow.ShowDialog();
-                
-                _viewModel.StatusMessage = response.Success 
-                    ? Strings.Instance["AiAnalysisComplete"]
-                    : Strings.Instance.Error;
+                    AiSearchService.DefaultSearchResultsAnalysisPrompt,
+                    query);
+
+                if (response.Success)
+                {
+                    var resultWindow = new AiSearchResultWindow(response) { Owner = this };
+                    resultWindow.ShowDialog();
+                    _viewModel.StatusMessage = Strings.Instance["AiAnalysisComplete"];
+                }
+                else
+                {
+                    _viewModel.StatusMessage = $"{Strings.Instance.Error}: {response.ErrorMessage}";
+                }
             }
             catch (Exception ex)
             {
                 _viewModel.StatusMessage = $"{Strings.Instance.Error}: {ex.Message}";
-                MessageBox.Show(
-                    ex.Message,
-                    Strings.Instance.Error,
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+            }
+            finally
+            {
+                _isAutoAnalyzingKeywordResults = false;
             }
         }
 
-        private async void LiveRagButton_Click(object sender, RoutedEventArgs e)
+        private async void AiSearchButton_Click(object sender, RoutedEventArgs e)
         {
             var (selectedDataSourceIds, selectedGroupIds) = GetSelectedSearchScope();
             var selectedSources = ResolveSelectedDataSources(selectedDataSourceIds, selectedGroupIds);
@@ -522,7 +499,7 @@ namespace MSCC
         private (List<string> dataSourceIds, List<string> groupIds) GetSelectedSearchScope()
         {
             var selectedDataSourceIds = _viewModel.DataSources
-                .Where(ds => ds.IsSelected)
+                .Where(ds => ds.IsSelected && ds.DataSource.IsEnabled)
                 .Select(ds => ds.DataSource.Id)
                 .ToList();
 
@@ -530,14 +507,6 @@ namespace MSCC
                 .Where(g => g.IsSelected)
                 .Select(g => g.Group.Id)
                 .ToList();
-
-            if (selectedDataSourceIds.Count == 0 && selectedGroupIds.Count == 0)
-            {
-                selectedDataSourceIds = _viewModel.DataSources
-                    .Where(ds => ds.DataSource.IsEnabled)
-                    .Select(ds => ds.DataSource.Id)
-                    .ToList();
-            }
 
             return (selectedDataSourceIds, selectedGroupIds);
         }
@@ -547,11 +516,14 @@ namespace MSCC
             IEnumerable<string> groupIds)
         {
             var resolvedIds = new HashSet<string>(dataSourceIds);
-            foreach (var groupId in groupIds)
+            foreach (var groupId in resolvedIds.Count == 0 ? groupIds : Enumerable.Empty<string>())
             {
                 foreach (var dataSource in GlobalState.GetDataSourcesByGroup(groupId))
                 {
-                    resolvedIds.Add(dataSource.Id);
+                    if (dataSource.IsEnabled)
+                    {
+                        resolvedIds.Add(dataSource.Id);
+                    }
                 }
             }
 

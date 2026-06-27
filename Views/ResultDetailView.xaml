@@ -35,7 +35,7 @@
                             x:Name="ContentArea"
                             Margin="0,0,0,12"/>
             
-            <StackPanel Grid.Row="3" x:Name="ActionsPanel" Orientation="Horizontal"/>
+            <WrapPanel Grid.Row="3" x:Name="ActionsPanel" ClipToBounds="True"/>
         </Grid>
     </Border>
 </UserControl>

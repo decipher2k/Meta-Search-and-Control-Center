@@ -49,15 +49,20 @@ public class SearchService
         IProgress<(string sourceName, int resultCount)>? progress = null)
     {
         var allResults = new List<SearchResult>();
-        var dataSourceIds = new HashSet<string>(query.SelectedDataSourceIds);
+        var dataSourceIds = new HashSet<string>(query.SelectedDataSourceIds, StringComparer.OrdinalIgnoreCase);
 
-        // Füge Datenquellen aus Gruppen hinzu
-        foreach (var groupId in query.SelectedGroupIds)
+        // Gruppen nur auflösen, wenn keine konkrete Data-Source-Auswahl vorliegt.
+        foreach (var groupId in dataSourceIds.Count == 0
+            ? query.SelectedGroupIds
+            : Enumerable.Empty<string>())
         {
             var groupDataSources = GlobalState.GetDataSourcesByGroup(groupId);
             foreach (var ds in groupDataSources)
             {
-                dataSourceIds.Add(ds.Id);
+                if (ds.IsEnabled)
+                {
+                    dataSourceIds.Add(ds.Id);
+                }
             }
         }
 
@@ -70,11 +75,14 @@ public class SearchService
             if (cancellationToken.IsCancellationRequested)
                 break;
 
+            var dataSource = GlobalState.DataSources.FirstOrDefault(ds => ds.Id == dataSourceId);
+            if (dataSource?.IsEnabled != true)
+                continue;
+
             var connector = _dataSourceManager.GetConnectorInstance(dataSourceId);
             if (connector == null)
                 continue;
 
-            var dataSource = GlobalState.DataSources.FirstOrDefault(ds => ds.Id == dataSourceId);
             var sourceName = dataSource?.Name ?? connector.Name;
 
             var task = connector.SearchAsync(query.SearchTerm, maxResultsPerSource, cancellationToken);
@@ -270,14 +278,19 @@ public class SearchService
         IEnumerable<string> dataSourceIds,
         IEnumerable<string>? groupIds)
     {
-        var resolvedDataSourceIds = new HashSet<string>(dataSourceIds);
+        var resolvedDataSourceIds = new HashSet<string>(dataSourceIds, StringComparer.OrdinalIgnoreCase);
 
-        foreach (var groupId in groupIds ?? Enumerable.Empty<string>())
+        foreach (var groupId in resolvedDataSourceIds.Count == 0
+            ? (groupIds ?? Enumerable.Empty<string>())
+            : Enumerable.Empty<string>())
         {
             var groupDataSources = GlobalState.GetDataSourcesByGroup(groupId);
             foreach (var ds in groupDataSources)
             {
-                resolvedDataSourceIds.Add(ds.Id);
+                if (ds.IsEnabled)
+                {
+                    resolvedDataSourceIds.Add(ds.Id);
+                }
             }
         }
 
@@ -334,6 +347,8 @@ public class SearchService
         {
             GlobalState.AddQuery(query);
         }
+
+        _ = GlobalState.SaveStateAsync();
     }
 
     /// <summary>

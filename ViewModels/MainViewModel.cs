@@ -99,18 +99,26 @@ public class AsyncRelayCommand : ICommand
 public class SelectableDataSource : ViewModelBase
 {
     private bool _isSelected;
+    private readonly Action<SelectableDataSource, bool>? _selectionChanged;
 
     public DataSource DataSource { get; }
 
     public bool IsSelected
     {
         get => _isSelected;
-        set => SetProperty(ref _isSelected, value);
+        set
+        {
+            if (SetProperty(ref _isSelected, value))
+            {
+                _selectionChanged?.Invoke(this, value);
+            }
+        }
     }
 
-    public SelectableDataSource(DataSource dataSource)
+    public SelectableDataSource(DataSource dataSource, Action<SelectableDataSource, bool>? selectionChanged = null)
     {
         DataSource = dataSource;
+        _selectionChanged = selectionChanged;
     }
 }
 
@@ -120,18 +128,26 @@ public class SelectableDataSource : ViewModelBase
 public class SelectableGroup : ViewModelBase
 {
     private bool _isSelected;
+    private readonly Action<SelectableGroup, bool>? _selectionChanged;
 
     public DataSourceGroup Group { get; }
 
     public bool IsSelected
     {
         get => _isSelected;
-        set => SetProperty(ref _isSelected, value);
+        set
+        {
+            if (SetProperty(ref _isSelected, value))
+            {
+                _selectionChanged?.Invoke(this, value);
+            }
+        }
     }
 
-    public SelectableGroup(DataSourceGroup group)
+    public SelectableGroup(DataSourceGroup group, Action<SelectableGroup, bool>? selectionChanged = null)
     {
         Group = group;
+        _selectionChanged = selectionChanged;
     }
 }
 
@@ -173,11 +189,14 @@ public class MainViewModel : ViewModelBase
     private SearchQuery? _currentQuery;
     private SelectableDataSource? _selectedDataSource;
     private SelectableGroup? _selectedGroup;
+    private bool _isApplyingSelectionCascade;
 
     public ObservableCollection<SelectableDataSource> DataSources { get; } = new();
     public ObservableCollection<SelectableGroup> Groups { get; } = new();
     public ObservableCollection<LabelableSearchResult> SearchResults { get; } = new();
     public ObservableCollection<SearchQuery> SavedQueries => GlobalState.Queries;
+
+    public event Action<IReadOnlyList<SearchResult>, string>? KeywordSearchCompleted;
 
     public string SearchTerm
     {
@@ -231,7 +250,7 @@ public class MainViewModel : ViewModelBase
     public ICommand SaveQueryCommand { get; }
     public ICommand LoadQueryCommand { get; }
     public ICommand SearchByKeywordCommand { get; }
-    
+
     // CRUD Commands
     public ICommand AddDataSourceCommand { get; }
     public ICommand EditDataSourceCommand { get; }
@@ -250,7 +269,7 @@ public class MainViewModel : ViewModelBase
         AddLabelCommand = new RelayCommand(AddLabel, _ => SelectedResult != null);
         RemoveLabelCommand = new RelayCommand(RemoveLabel);
         SaveQueryCommand = new RelayCommand(SaveCurrentQuery, _ => CurrentQuery != null);
-        LoadQueryCommand = new RelayCommand(LoadSavedQuery);
+        LoadQueryCommand = new RelayCommand(LoadSavedQuery, _ => !IsSearching);
         SearchByKeywordCommand = new AsyncRelayCommand(SearchByKeywordAsync);
 
         // CRUD Commands
@@ -349,13 +368,60 @@ public class MainViewModel : ViewModelBase
         DataSources.Clear();
         foreach (var ds in GlobalState.DataSources)
         {
-            DataSources.Add(new SelectableDataSource(ds));
+            DataSources.Add(new SelectableDataSource(ds, OnDataSourceSelectionChanged));
         }
 
         Groups.Clear();
         foreach (var group in GlobalState.Groups)
         {
-            Groups.Add(new SelectableGroup(group));
+            Groups.Add(new SelectableGroup(group, OnGroupSelectionChanged));
+        }
+    }
+
+    private void OnGroupSelectionChanged(SelectableGroup group, bool isSelected)
+    {
+        if (_isApplyingSelectionCascade)
+            return;
+
+        _isApplyingSelectionCascade = true;
+        try
+        {
+            foreach (var dataSource in DataSources.Where(ds => ds.DataSource.GroupId == group.Group.Id))
+            {
+                dataSource.IsSelected = isSelected;
+            }
+        }
+        finally
+        {
+            _isApplyingSelectionCascade = false;
+        }
+    }
+
+    private void OnDataSourceSelectionChanged(SelectableDataSource dataSource, bool isSelected)
+    {
+        if (_isApplyingSelectionCascade || string.IsNullOrWhiteSpace(dataSource.DataSource.GroupId))
+            return;
+
+        var group = Groups.FirstOrDefault(g => g.Group.Id == dataSource.DataSource.GroupId);
+        if (group == null)
+            return;
+
+        var linkedSources = DataSources
+            .Where(ds => ds.DataSource.GroupId == dataSource.DataSource.GroupId)
+            .ToList();
+        var allLinkedSourcesSelected = linkedSources.Count > 0 && linkedSources.All(ds => ds.IsSelected);
+
+        if (group.IsSelected == allLinkedSourcesSelected)
+            return;
+
+        _isApplyingSelectionCascade = true;
+        try
+        {
+            group.IsSelected = allLinkedSourcesSelected;
+        }
+        finally
+        {
+            _isApplyingSelectionCascade = false;
         }
     }
 
@@ -366,6 +432,7 @@ public class MainViewModel : ViewModelBase
 
         IsSearching = true;
         StatusMessage = "Suche läuft...";
+        SelectedResult = null;
         SearchResults.Clear();
 
         _searchCancellation = new CancellationTokenSource();
@@ -373,7 +440,7 @@ public class MainViewModel : ViewModelBase
         try
         {
             var selectedDataSourceIds = DataSources
-                .Where(ds => ds.IsSelected)
+                .Where(ds => ds.IsSelected && ds.DataSource.IsEnabled)
                 .Select(ds => ds.DataSource.Id)
                 .ToList();
 
@@ -381,17 +448,7 @@ public class MainViewModel : ViewModelBase
                 .Where(g => g.IsSelected)
                 .Select(g => g.Group.Id)
                 .ToList();
-
-            // Wenn nichts ausgewählt ist, alle aktivierten Datenquellen verwenden
             if (selectedDataSourceIds.Count == 0 && selectedGroupIds.Count == 0)
-            {
-                selectedDataSourceIds = DataSources
-                    .Where(ds => ds.DataSource.IsEnabled)
-                    .Select(ds => ds.DataSource.Id)
-                    .ToList();
-            }
-
-            if (selectedDataSourceIds.Count == 0)
             {
                 StatusMessage = "Keine Datenquellen ausgewaehlt oder verfuegbar";
                 IsSearching = false;
@@ -419,17 +476,18 @@ public class MainViewModel : ViewModelBase
             foreach (var result in results)
             {
                 var labelable = new LabelableSearchResult(result);
-                
+
                 // Lade vorhandene Labels aus der Abfrage
                 foreach (var label in CurrentQuery.Labels.Where(l => l.DataReference == result.OriginalReference))
                 {
                     labelable.Labels.Add(label);
                 }
-                
+
                 SearchResults.Add(labelable);
             }
 
             StatusMessage = $"Suche abgeschlossen: {results.Count} Ergebnisse in {selectedDataSourceIds.Count} Quelle(n)";
+            KeywordSearchCompleted?.Invoke(results, SearchTerm);
         }
         catch (OperationCanceledException)
         {
@@ -476,7 +534,7 @@ public class MainViewModel : ViewModelBase
 
         if (_searchService.RemoveLabel(CurrentQuery, label.Id))
         {
-            var result = SearchResults.FirstOrDefault(r => 
+            var result = SearchResults.FirstOrDefault(r =>
                 r.Labels.Any(l => l.Id == label.Id));
             result?.Labels.Remove(label);
 
@@ -496,15 +554,47 @@ public class MainViewModel : ViewModelBase
 
     private void LoadSavedQuery(object? parameter)
     {
-        if (parameter is not string queryId)
+        var queryId = parameter switch
+        {
+            string id => id,
+            SearchQuery queryParameter => queryParameter.Id,
+            _ => string.Empty
+        };
+
+        if (string.IsNullOrWhiteSpace(queryId))
             return;
 
         var query = _searchService.LoadQuery(queryId);
-        if (query != null)
+        if (query == null)
         {
-            SearchTerm = query.SearchTerm;
-            CurrentQuery = query;
-            StatusMessage = $"Abfrage '{query.Name}' geladen";
+            StatusMessage = "Gespeicherte Abfrage wurde nicht gefunden";
+            return;
+        }
+
+        SearchTerm = query.SearchTerm;
+        RestoreSavedQuerySelection(query);
+        SelectedResult = null;
+        SearchResults.Clear();
+        CurrentQuery = query;
+        GlobalState.CurrentQuery = query;
+        StatusMessage = $"Abfrage '{query.Name ?? query.SearchTerm}' geladen";
+    }
+
+    private void RestoreSavedQuerySelection(SearchQuery query)
+    {
+        var selectedDataSourceIds = new HashSet<string>(query.SelectedDataSourceIds, StringComparer.OrdinalIgnoreCase);
+        var selectedGroupIds = new HashSet<string>(query.SelectedGroupIds, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var group in Groups)
+        {
+            group.IsSelected = selectedGroupIds.Contains(group.Group.Id);
+        }
+
+        foreach (var dataSource in DataSources)
+        {
+            var isSelectedByGroup = !string.IsNullOrWhiteSpace(dataSource.DataSource.GroupId)
+                && selectedGroupIds.Contains(dataSource.DataSource.GroupId);
+            dataSource.IsSelected = selectedDataSourceIds.Contains(dataSource.DataSource.Id) || isSelectedByGroup;
         }
     }
 

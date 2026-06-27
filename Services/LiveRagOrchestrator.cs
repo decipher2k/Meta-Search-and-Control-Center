@@ -529,10 +529,17 @@ public class LiveRagOrchestrator
     {
         var resolved = new HashSet<string>(dataSourceIds, StringComparer.OrdinalIgnoreCase);
 
-        foreach (var groupId in groupIds ?? Enumerable.Empty<string>())
+        foreach (var groupId in resolved.Count == 0
+            ? (groupIds ?? Enumerable.Empty<string>())
+            : Enumerable.Empty<string>())
         {
             foreach (var source in GlobalState.GetDataSourcesByGroup(groupId))
-                resolved.Add(source.Id);
+            {
+                if (source.IsEnabled)
+                {
+                    resolved.Add(source.Id);
+                }
+            }
         }
 
         return resolved;

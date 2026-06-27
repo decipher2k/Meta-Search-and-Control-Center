@@ -13,6 +13,30 @@ public class AiSearchService
 {
     private static readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(120) };
 
+    public const string DefaultSearchResultsAnalysisPrompt = """
+        You are a helpful assistant. Analyze the following search results and provide a well-structured summary.
+
+        IMPORTANT: Your response MUST be valid HTML. Use these HTML elements for formatting:
+        - <h2> for main section headers
+        - <h3> for sub-section headers
+        - <p> for paragraphs
+        - <ul> and <li> for bullet lists
+        - <ol> and <li> for numbered lists
+        - <strong> for bold/important text
+        - <em> for italic/emphasized text
+        - <code> for code or technical terms
+        - <blockquote> for quotes or important notes
+        - <table>, <tr>, <th>, <td> for tabular data
+
+        Structure your response with clear sections. Highlight the most relevant information.
+        Do NOT include <html>, <head>, or <body> tags - only the inner content.
+        """;
+
+    public static bool HasConfiguredAiSettings()
+    {
+        return ValidateAiSettings(SettingsService.Instance.Settings) == null;
+    }
+
     /// <summary>
     /// Sends search results to an OpenAI-compatible API with a system prompt.
     /// </summary>

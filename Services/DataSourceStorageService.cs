@@ -26,6 +26,7 @@ public class StoredQuery
     public string SearchTerm { get; set; } = string.Empty;
     public List<string> Labels { get; set; } = new();
     public List<string> SelectedDataSourceIds { get; set; } = new();
+    public List<string> SelectedGroupIds { get; set; } = new();
     public DateTime CreatedAt { get; set; }
 }
 
@@ -73,6 +74,7 @@ public class DataSourceStorageService
                     SearchTerm = q.SearchTerm,
                     Labels = q.Labels.Select(l => l.Keyword).ToList(),
                     SelectedDataSourceIds = q.SelectedDataSourceIds.ToList(),
+                    SelectedGroupIds = q.SelectedGroupIds.ToList(),
                     CreatedAt = q.CreatedAt
                 }).ToList()
             };

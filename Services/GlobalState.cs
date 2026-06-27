@@ -72,7 +72,7 @@ public static class GlobalState
         lock (_lock)
         {
             return Queries
-                .Where(q => q.Labels.Any(l => 
+                .Where(q => q.Labels.Any(l =>
                     l.Keyword.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
         }
@@ -178,17 +178,22 @@ public static class GlobalState
                     SearchTerm = storedQuery.SearchTerm,
                     CreatedAt = storedQuery.CreatedAt
                 };
-                
+
                 foreach (var keyword in storedQuery.Labels)
                 {
                     query.Labels.Add(new QueryLabel { Keyword = keyword });
                 }
-                
+
                 foreach (var dsId in storedQuery.SelectedDataSourceIds)
                 {
                     query.SelectedDataSourceIds.Add(dsId);
                 }
-                
+
+                foreach (var groupId in storedQuery.SelectedGroupIds)
+                {
+                    query.SelectedGroupIds.Add(groupId);
+                }
+
                 Queries.Add(query);
             }
         }
